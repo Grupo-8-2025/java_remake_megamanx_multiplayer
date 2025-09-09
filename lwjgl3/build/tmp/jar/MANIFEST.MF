@@ -1,0 +1,3 @@
+Manifest-Version: 1.0
+Main-Class: com.tp1.dotsandboxes.lwjgl3.Lwjgl3Launcher
+
