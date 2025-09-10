@@ -1,11 +1,13 @@
 package com.tp2.megamanx;
 
+// Importações dos iteradores personalizados para gerenciamento de inimigos e personagens
 import com.tp2.megamanx.Iterators.InimigoIterator;
 import com.tp2.megamanx.Iterators.PersonagemIterator;
 
 import java.util.Random;
 import java.util.ArrayList;
 
+// Importações do framework LibGDX para desenvolvimento de jogos
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -23,105 +25,144 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.audio.Sound;
 
+/**
+ * Classe principal do jogo Mega Man X
+ * Estende a classe Game do LibGDX e gerencia toda a lógica do jogo
+ * Responsável por controlar o loop principal, renderização, colisões e estados do jogo
+ */
 public class Jogo extends Game {
 
-    private Texture texturaMegaMan;
-    private Texture texturaPenguin;
-    private Texture texturaTrower;
-    private Texture texturaJaminger;
-    private Texture texturaFundo;
+    // Texturas dos personagens principais e elementos visuais
+    private Texture texturaMegaMan;      // Textura do personagem jogável Mega Man
+    private Texture texturaPenguin;      // Textura do chefe Penguin
+    private Texture texturaTrower;       // Textura do inimigo Trower
+    private Texture texturaJaminger;     // Textura do inimigo Jaminger
+    private Texture texturaFundo;        // Textura do fundo do jogo
 
-    private SpriteBatch batch;
-    private OrthographicCamera camera;
-    private Vector2 cameraFoco;
-    private Viewport viewport;
-    private BitmapFont fonteVida;
-    private FreeTypeFontGenerator gerador;
-    private FreeTypeFontGenerator.FreeTypeFontParameter parametro;
+    // Componentes de renderização e câmera
+    private SpriteBatch batch;                    // Responsável por desenhar texturas na tela
+    private OrthographicCamera camera;            // Câmera ortográfica para visualização 2D
+    private Vector2 cameraFoco;                   // Ponto de foco da câmera (segue o Mega Man)
+    private Viewport viewport;                    // Gerencia diferentes resoluções de tela
+    
+    // Componentes de fonte e texto
+    private BitmapFont fonteVida;                 // Fonte para exibir informações de vida
+    private FreeTypeFontGenerator gerador;        // Gerador de fontes TTF
+    private FreeTypeFontGenerator.FreeTypeFontParameter parametro; // Parâmetros da fonte
 
-    private ArrayList<Vector2> posicoesValidas;
-    private Random random;
+    // Geração aleatória de posições para inimigos
+    private ArrayList<Vector2> posicoesValidas;   // Lista de posições válidas para spawn de inimigos
+    private Random random;                        // Gerador de números aleatórios
 
-    private Mapa mapa;
+    // Mapa do jogo
+    private Mapa mapa;                           // Instância do mapa carregado do arquivo TMX
 
-    private GerenciadorColisoes gerenciadorColisoes;
-    private InimigoIterator inimigos;
-    private PersonagemIterator personagens;
+    // Gerenciadores e coleções de entidades
+    private GerenciadorColisoes gerenciadorColisoes; // Gerencia todas as colisões do jogo
+    private InimigoIterator inimigos;                 // Iterator para percorrer lista de inimigos
+    private PersonagemIterator personagens;           // Iterator para percorrer lista de personagens
 
-    private MegaMan megaMan;
-    private int vidasMegaMan = 3;
-    private boolean gameOver = false;
-    private Pinguim penguin;
+    // Personagens principais
+    private MegaMan megaMan;          // Personagem principal jogável
+    private int vidasMegaMan = 3;     // Número de vidas restantes do Mega Man
+    private boolean gameOver = false; // Flag indicando se o jogo terminou
+    private Pinguim penguin;          // Chefe principal do jogo
 
-    private Sound somMorte, somVitoria, somPadrao;
+    // Efeitos sonoros
+    private Sound somMorte, somVitoria, somPadrao; // Sons de morte, vitória e música de fundo
 
+    // Renderização de formas geométricas (barras de vida)
     private ShapeRenderer shapeRenderer;
 
+    /**
+     * Método chamado na inicialização do jogo
+     * Configura a tela inicial e cria todos os objetos necessários
+     */
     @Override
     public void create() {
-        setScreen(new TelaInicial(this));
-        criaObjetosJogo();
+        setScreen(new TelaInicial(this)); // Exibe tela inicial
+        criaObjetosJogo();                // Inicializa todos os componentes do jogo
     }
 
+    /**
+     * Método responsável por criar e inicializar todos os objetos do jogo
+     * Configura câmera, renderizadores, fontes, sons e entidades
+     */
     private void criaObjetosJogo(){
-        batch = new SpriteBatch();
-        camera = new OrthographicCamera();
-        cameraFoco = new Vector2();
-        camera.setToOrtho(false, 800, 600);
-        viewport = new FillViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
-        shapeRenderer = new ShapeRenderer();
-        gerador = new FreeTypeFontGenerator(Gdx.files.internal("font.ttf"));
-        parametro = new FreeTypeFontGenerator.FreeTypeFontParameter();
-        parametro.size = 24;
-        parametro.color = Color.WHITE;
-        fonteVida = gerador.generateFont(parametro);
-        gerador.dispose();
+        batch = new SpriteBatch();                    // Cria o SpriteBatch para desenhar texturas
+        camera = new OrthographicCamera();            // Cria câmera ortográfica para visão 2D
+        cameraFoco = new Vector2();                   // Inicializa o ponto de foco da câmera
+        camera.setToOrtho(false, 800, 600);           // Configura câmera com resolução 800x600
+        viewport = new FillViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()); // Viewport adaptável
+        shapeRenderer = new ShapeRenderer();          // Renderizador para formas geométricas
+        
+        // Configuração da fonte para exibir textos
+        gerador = new FreeTypeFontGenerator(Gdx.files.internal("font.ttf")); // Carrega arquivo de fonte
+        parametro = new FreeTypeFontGenerator.FreeTypeFontParameter();        // Cria parâmetros da fonte
+        parametro.size = 24;                          // Define tamanho da fonte
+        parametro.color = Color.WHITE;                // Define cor branca para a fonte
+        fonteVida = gerador.generateFont(parametro);  // Gera a fonte com os parâmetros definidos
+        gerador.dispose();                            // Libera recursos do gerador
 
+        // Carregamento dos efeitos sonoros
         somMorte = Gdx.audio.newSound(Gdx.files.internal("sons/megaman-x-death-sound-effect.mp3"));
         somVitoria = Gdx.audio.newSound(Gdx.files.internal("sons/mmx-stage-clear.mp3"));
         somPadrao = Gdx.audio.newSound(Gdx.files.internal("sons/mega-man-x2-snes-music-first-stage-audiotrimmer.mp3"));
 
+        random = new Random();                        // Gerador de números aleatórios
+        posicoesValidas = new ArrayList<>();          // Lista para armazenar posições válidas
 
-        random = new Random();
-        posicoesValidas = new ArrayList<>();
+        gerenciadorColisoes = new GerenciadorColisoes(); // Gerenciador de colisões
+        inimigos = new InimigoIterator();                 // Iterator para inimigos
+        personagens = new PersonagemIterator();           // Iterator para personagens
 
-        gerenciadorColisoes = new GerenciadorColisoes();
-        inimigos = new InimigoIterator();
-        personagens = new PersonagemIterator();
+        carregaTexturas();  // Carrega todas as texturas necessárias
+        criaMapa();         // Cria e configura o mapa do jogo
+        criaPersonagens();  // Cria todos os personagens do jogo
 
-        carregaTexturas();
-        criaMapa();
-        criaPersonagens();
-
-        somPadrao.play(somPadrao.loop());
+        somPadrao.play(somPadrao.loop()); // Inicia a música de fundo em loop
     }
 
+    /**
+     * Cria e configura o mapa do jogo
+     * Carrega o arquivo TMX do mapa com as dimensões especificadas
+     */
     private void criaMapa(){
         mapa = new Mapa("maps/Mapa.tmx", 800, 600);
     }
 
+    /**
+     * Carrega todas as texturas necessárias para o jogo
+     * Inclui texturas dos personagens, inimigos e elementos visuais
+     */
     private void carregaTexturas(){
-        TipoAtaque.carregarTodasTexturas();
-        texturaMegaMan = new Texture("imagens/MegaMan/megaMan.png");
-        texturaPenguin = new Texture("imagens/ChilPenguin/inimigos/Penguin/penguin.png");
-        texturaTrower = new Texture("imagens/ChilPenguin/inimigos/now.png");
-        texturaJaminger = new Texture("imagens/ChilPenguin/inimigos/jaminger.png");
-        texturaFundo = new Texture("fundos/cena-de-pixels-graficos-de-8-bits-com-montanhas.jpg");
+        TipoAtaque.carregarTodasTexturas();                                           // Carrega texturas dos ataques
+        texturaMegaMan = new Texture("imagens/MegaMan/megaMan.png");                 // Textura do Mega Man
+        texturaPenguin = new Texture("imagens/ChilPenguin/inimigos/Penguin/penguin.png"); // Textura do Penguin
+        texturaTrower = new Texture("imagens/ChilPenguin/inimigos/now.png");         // Textura do Trower
+        texturaJaminger = new Texture("imagens/ChilPenguin/inimigos/jaminger.png");  // Textura do Jaminger
+        texturaFundo = new Texture("fundos/cena-de-pixels-graficos-de-8-bits-com-montanhas.jpg"); // Fundo do jogo
     }
 
+    /**
+     * Cria todos os personagens do jogo, incluindo MegaMan e inimigos
+     */
     private void criaPersonagens(){
         criarInimigos();
-        megaMan = new MegaMan(texturaMegaMan, 330, 2517);
-
-        personagens.add(megaMan);
-        personagens.add(penguin);
+        megaMan = new MegaMan(texturaMegaMan, 330, 2517); // Cria o MegaMan na posição inicial
+        personagens.add(megaMan);                         // Adiciona MegaMan à lista de personagens
+        personagens.add(penguin);                         // Adiciona o chefe Penguin
     }
 
+    /**
+     * Cria e posiciona todos os inimigos do jogo
+     * Sorteia posições válidas e alterna entre tipos de inimigos
+     */
     private void criarInimigos(){
-        penguin = new Pinguim(texturaPenguin, 11635, 3000);
-        //penguin = new Pinguim(texturaPenguin, 500, 2517);
+        penguin = new Pinguim(texturaPenguin, 11635, 3000); // Cria o chefe Penguin
         inimigos.add(penguin);
         
+        // Cria ataques padrões para inimigos
         Ataque ataqueTrower = new Ataque(new TextureRegion(TipoAtaque.BOLA_NEVE.getTextura(), 
 		TipoAtaque.BOLA_NEVE.getCordX1(), TipoAtaque.BOLA_NEVE.getCordY1(),
 		TipoAtaque.BOLA_NEVE.getLargura1(), TipoAtaque.BOLA_NEVE.getAltura1()), 
@@ -132,12 +173,13 @@ public class Jogo extends Game {
 		TipoAtaque.DISCO.getLargura1(), TipoAtaque.DISCO.getAltura1()), 
 		0, 0, new Vector2(0.05f, 0.5f), TipoAtaque.DISCO, -5);
             
-        determinarPosicoesValidas();
+        determinarPosicoesValidas(); // Calcula posições válidas para spawn
 
         int indexPosicaoAnterior = -1;
         for(int i=0; i<15; i++){
             int indexPosicao = random.nextInt(posicoesValidas.size());
 
+            // Garante espaçamento mínimo entre inimigos
             if(indexPosicaoAnterior == -1 || Math.abs(posicoesValidas.get(indexPosicao).x - posicoesValidas.get(indexPosicaoAnterior).x) > 800){
                 int sortearPersonagem = random.nextInt(2);
                 if(sortearPersonagem == 0){
@@ -167,6 +209,9 @@ public class Jogo extends Game {
         
     }
 
+    /**
+     * Determina todas as posições válidas para spawn de inimigos com base nas plataformas do mapa
+     */
     private void determinarPosicoesValidas(){
     posicoesValidas.clear();
     for(Rectangle plataforma : mapa.getChaos()){
@@ -177,29 +222,38 @@ public class Jogo extends Game {
     System.out.println("Posições válidas encontradas: " + posicoesValidas.size());
 }
 
+    /**
+     * Loop principal de renderização do jogo
+     * Atualiza câmera, limpa tela, processa lógica de jogo e desenha elementos
+     */
     @Override
     public void render() {
+        // Atualiza o foco da câmera para seguir o MegaMan
         cameraFoco.set(megaMan.getPosX() + megaMan.getCorpo().getBoundingRectangle().width, 
         megaMan.getPosY() + (megaMan.getCorpo().getBoundingRectangle().height/2));
         camera.position.set(cameraFoco, 0);
         camera.update();
         batch.setProjectionMatrix(camera.combined); 
         
+        // Limpa a tela com cor branca
         Gdx.gl.glClearColor(255f, 255f, 255f, 1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
+        // Se o MegaMan não morreu, processa lógica de ataques, atualização e colisões
         if(!megaMan.isMorreu()){
             ataquesPersonagens();
             atualizarPersonagens();
             colisoes();
         }
 
-        desenhaItens();
-        super.render();
+        desenhaItens(); // Desenha todos os elementos visuais
+        super.render(); // Chama renderização padrão do LibGDX
     }
 
-    
-
+    /**
+     * Atualiza todos os personagens do jogo
+     * Move, executa ataques, verifica mortes e troca de telas
+     */
     private void atualizarPersonagens(){
         personagens.reset();
         while (personagens.hasNext()) {
@@ -207,31 +261,29 @@ public class Jogo extends Game {
             personagem.mover();
             personagem.atacar();
             personagem.morrer();
+            // Se o chefe morreu, exibe tela de vitória
             if(penguin.getVida() <= 0){
                 somVitoria.play();
                 setScreen(new TelaVitoria(this));
             }
+            // Se o MegaMan morreu, processa vidas e game over
             if (megaMan.isMorreu() && !gameOver) {
-                //megaMan.setPosicao(0, 0);
                 somMorte.play();
                 vidasMegaMan--;
                 if (vidasMegaMan > 0) {
-                    //megaMan = new MegaMan(texturaMegaMan, 330, 2517);
                     dispose();
                     criaObjetosJogo();
                     gameOver = false;
-                    //megaMan.setPosicao(330, 2517);
-                    //megaMan.setVida(16);
-                    //personagens.add(megaMan);
                 } else {
                     gameOver = true;
                     setScreen(new TelaGameOver(this));
                 }
             }
-            megaMan.confereMortePorQueda();
+            megaMan.confereMortePorQueda(); // Verifica se MegaMan caiu do mapa
         }
         personagens.reset();
 
+        // Atualiza posição do MegaMan para todos os inimigos
         inimigos.reset();
         while (inimigos.hasNext()) {
             Inimigo inimigo = inimigos.next();
@@ -239,9 +291,12 @@ public class Jogo extends Game {
         }
         inimigos.reset();
 
-        penguin.atualizar();
+        penguin.atualizar(); // Atualiza lógica do chefe
     }
 
+    /**
+     * Atualiza e dispara todos os ataques ativos dos personagens
+     */
     private void ataquesPersonagens(){
         personagens.reset();
         while (personagens.hasNext()) {
@@ -253,6 +308,9 @@ public class Jogo extends Game {
         personagens.reset();
     }
 
+    /**
+     * Gerencia todas as colisões do jogo (personagens, plataformas, ataques, inimigos)
+     */
     private void colisoes() {
 
         gerenciadorColisoes.colisaoPersonagensPlataformas(mapa.getRetangulosColisao(), personagens);
@@ -286,8 +344,10 @@ public class Jogo extends Game {
         personagens.reset();
     }
 
-
-
+    /**
+     * Desenha as barras de vida do MegaMan e do chefe Penguin na tela
+     * Inclui lógica para exibir barra do chefe apenas quando próximo
+     */
     private void desenharVida() {
         float larguraBarra = 20;
         float alturaBarra = 200;
@@ -314,6 +374,7 @@ public class Jogo extends Game {
 
         shapeRenderer.end();
 
+        // Exibe barra de vida do chefe apenas se estiver próximo do MegaMan
         float distancia = megaMan.getCorpo().getBoundingRectangle().getCenter(new Vector2()).dst(
             penguin.getCorpo().getBoundingRectangle().getCenter(new Vector2())
         );
@@ -338,39 +399,42 @@ public class Jogo extends Game {
             shapeRenderer.end();
         }
     }
+
+    /**
+     * Desenha todos os elementos visuais do jogo (fundo, entidades, HUD)
+     */
     private void desenhaItens(){
-    
         batch.begin();
-
+        // Desenha o fundo do jogo
         batch.draw(texturaFundo, camera.position.x - camera.viewportWidth / 2, camera.position.y - camera.viewportHeight / 2, camera.viewportWidth, camera.viewportHeight );
-
         batch.end();
 
+        // Renderiza o mapa
         mapa.render(camera);
 
         batch.begin();
-
-        desenharEntidades();
-
+        desenharEntidades(); // Desenha personagens e ataques
+        // Exibe informações de vida no topo da tela
         fonteVida.draw(batch, "Vida MegaMan: " + megaMan.getVida(), camera.position.x - camera.viewportWidth / 2 + 20, camera.position.y + camera.viewportHeight / 2 - 20);
-
         fonteVida.draw(batch, "Vida Penguin: " + penguin.getVida(), camera.position.x - camera.viewportWidth / 2 + 20, camera.position.y + camera.viewportHeight / 2 - 50);
-
-        desenharVida();
+        desenharVida(); // Desenha barras de vida
         batch.end();
         
+        // Opcional: desenha retângulos de colisão para debug
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(Color.RED);
         // for (Rectangle r : mapa.getChaos()) {
         //     shapeRenderer.rect(r.x, r.y, r.width, r.height);
         // }
-        
         shapeRenderer.end();
     }
 
+    /**
+     * Desenha todos os personagens e ataques ativos na tela
+     */
     private void desenharEntidades(){
-        desenharAtaques();
+        desenharAtaques(); // Desenha todos os ataques ativos
         personagens.reset();
         while (personagens.hasNext()) {
             Personagem personagem = personagens.next();
@@ -379,22 +443,33 @@ public class Jogo extends Game {
         personagens.reset();
     }
 
+    /**
+     * Desenha todos os ataques ativos de todos os personagens
+     */
     private void desenharAtaques(){
         personagens.reset();
         while (personagens.hasNext()) {
             Personagem personagem = personagens.next();
             for(int i=0; i < personagem.getAtaquesAtivos().size(); i++){
-                personagem.getAtaquesAtivos().get(i).draw(batch);;
+                personagem.getAtaquesAtivos().get(i).draw(batch);
             }
         }
         personagens.reset();
     }
 
+    /**
+     * Atualiza o viewport quando a janela é redimensionada
+     * @param width Nova largura da janela
+     * @param height Nova altura da janela
+     */
     @Override
     public void resize(int width, int height) {
         viewport.update(width, height);
     }
 
+    /**
+     * Reinicia o jogo, restaurando vidas e resetando todos os objetos
+     */
     public void reset(){
         vidasMegaMan = 3;
         gameOver = false;
@@ -402,7 +477,10 @@ public class Jogo extends Game {
         create();
     }
 
-
+    /**
+     * Libera todos os recursos gráficos e sonoros utilizados pelo jogo
+     * Evita vazamento de memória ao fechar ou reiniciar o jogo
+     */
     @Override
     public void dispose() {
         if(mapa != null) {
