@@ -70,6 +70,7 @@ public class Jogo extends Game {
 
     // Efeitos sonoros
     private Sound somMorte, somVitoria, somPadrao; // Sons de morte, vitória e música de fundo
+    private boolean somPadraoTocando = false;      // Estado do som de fundo
 
     // Renderização de formas geométricas (barras de vida)
     private ShapeRenderer shapeRenderer;
@@ -119,7 +120,8 @@ public class Jogo extends Game {
         carregaTexturas();  // Carrega todas as texturas necessárias
         criaMapa();         // Cria e configura o mapa do jogo
         criaPersonagens();  // Cria todos os personagens do jogo
-
+        somPadrao.play(somPadrao.loop()); // Inicia a música de fundo em loop
+        somPadraoTocando = true;
         somPadrao.play(somPadrao.loop()); // Inicia a música de fundo em loop
     }
 
@@ -246,8 +248,22 @@ public class Jogo extends Game {
             colisoes();
         }
 
+        mutaSomFundo(); // Verifica input para mutar/desmutar som de fundo
         desenhaItens(); // Desenha todos os elementos visuais
         super.render(); // Chama renderização padrão do LibGDX
+    }
+
+    /* Muta o som de fundo */
+    private void mutaSomFundo(){
+        if(Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.M) && Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT)){ // Tecla M para mutar/desmutar
+            if(somPadraoTocando){ // Se o som está tocando, pausa
+                somPadrao.pause();
+                somPadraoTocando = false; // Atualiza estado para pausado
+            } else {
+                somPadrao.play(somPadrao.loop());
+                somPadraoTocando = true; // Atualiza estado para tocando
+            }
+        }
     }
 
     /**
