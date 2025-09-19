@@ -64,6 +64,7 @@ public class Jogo extends Game {
 
     // Personagens principais
     private MegaMan megaMan;          // Personagem principal jogável
+    private MegaMan remoteMegaMan; // Personagem do segundo jogador (multiplayer)
     private int vidasMegaMan = 3;     // Número de vidas restantes do Mega Man
     private boolean gameOver = false; // Flag indicando se o jogo terminou
     private Pinguim penguin;          // Chefe principal do jogo
@@ -75,6 +76,10 @@ public class Jogo extends Game {
     // Renderização de formas geométricas (barras de vida)
     private ShapeRenderer shapeRenderer;
 
+    private NetworkManager networkManager; // Gerencia a comunicação em rede
+    private boolean isServer = false; // Indica se esta instância é o servidor
+    private String[] args; // Argumentos de linha de comando
+
     /**
      * Método chamado na inicialização do jogo
      * Configura a tela inicial e cria todos os objetos necessários
@@ -83,6 +88,25 @@ public class Jogo extends Game {
     public void create() {
         setScreen(new TelaInicial(this)); // Exibe tela inicial
         criaObjetosJogo();                // Inicializa todos os componentes do jogo
+    }
+
+    /**
+     * Atualiza a posição do jogador remoto (segundo jogador) no modo multiplayer
+     * @param pos Objeto contendo a nova posição e ID do jogador
+     */
+    public void setArgs(String[] args) {
+        this.args = args;
+        if (args != null && args.length > 0) {
+            if ("server".equals(args[0])) {
+                isServer = true;
+            } else if ("client".equals(args[0])) {
+                isServer = false;
+            } else {
+                isServer = true; // Default to server
+            }
+        } else {
+            isServer = true; // Default to server
+        }
     }
 
     /**
@@ -120,9 +144,12 @@ public class Jogo extends Game {
         carregaTexturas();  // Carrega todas as texturas necessárias
         criaMapa();         // Cria e configura o mapa do jogo
         criaPersonagens();  // Cria todos os personagens do jogo
+
+        networkManager = new NetworkManager(this, isServer); // Inicializa o gerenciador de rede
+        remoteMegaMan = new MegaMan(texturaMegaMan, 0, 0); // Inicializa o personagem remoto
+
         somPadrao.play(somPadrao.loop()); // Inicia a música de fundo em loop
         somPadraoTocando = true;
-        somPadrao.play(somPadrao.loop()); // Inicia a música de fundo em loop
     }
 
     /**
@@ -246,6 +273,12 @@ public class Jogo extends Game {
             ataquesPersonagens();
             atualizarPersonagens();
             colisoes();
+        }
+
+        // Envia a posição do jogador local e atualiza a posição do jogador remoto
+        networkManager.sendPlayerPosition(megaMan.getPosX(), megaMan.getPosY(), isServer ? 0 : 1); // ID 0 para servidor, 1 para cliente
+        if (isServer) {
+            networkManager.sendEnemyPositions(); // Envia posições dos inimigos se for servidor
         }
 
         mutaSomFundo(); // Verifica input para mutar/desmutar som de fundo
@@ -457,6 +490,11 @@ public class Jogo extends Game {
             personagem.draw(batch);
         }
         personagens.reset();
+
+        // Desenha o jogador remoto (segundo jogador) se estiver ativo
+        if (remoteMegaMan.getPosX() != 0 || remoteMegaMan.getPosY() != 0) {
+            remoteMegaMan.draw(batch);
+        }
     }
 
     /**
@@ -494,6 +532,48 @@ public class Jogo extends Game {
     }
 
     /**
+     * Atualiza a posição do jogador remoto (segundo jogador) no modo multiplayer
+     * @param pos Objeto contendo a nova posição e ID do jogador
+     */
+    public void updateRemotePlayer(PlayerPosition pos) {
+        remoteMegaMan.setPosicao(pos.x, pos.y);
+    }
+
+    /**
+     * Obtém as posições atuais de todos os inimigos para envio em rede
+     * @return Objeto contendo listas de posições X, Y e IDs dos inimigos
+     */
+    public EnemyPosition getEnemyPositions() {
+        EnemyPosition pos = new EnemyPosition(); // Inicializa listas vazias
+        inimigos.reset();
+        while (inimigos.hasNext()) {
+            Inimigo inimigo = inimigos.next();
+            pos.x.add(((Personagem) inimigo).getPosX()); // Adiciona posição X
+            pos.y.add(((Personagem) inimigo).getPosY()); // Adiciona posição Y
+            pos.ids.add(inimigo.hashCode()); // Adiciona ID
+        }
+        inimigos.reset(); // Reinicia o iterator
+        return pos;
+    }
+
+    /**
+     * Atualiza as posições dos inimigos com base nos dados recebidos em rede
+     * @param pos Objeto contendo listas de posições X, Y e IDs dos inimigos
+     */
+    public void updateEnemies(EnemyPosition pos) {
+        if (!isServer) { // Apenas o cliente atualiza as posições dos inimigos
+            int i = 0;
+            inimigos.reset(); // Reinicia o iterator
+            while (inimigos.hasNext() && i < pos.x.size()) { // Enquanto houver inimigos e posições
+                Inimigo inimigo = inimigos.next(); // Pega o próximo inimigo
+                ((Personagem) inimigo).setPosicao(pos.x.get(i), pos.y.get(i)); // Atualiza posição
+                i++;
+            }
+            inimigos.reset(); // Reinicia o iterator
+        }
+    }
+
+    /**
      * Libera todos os recursos gráficos e sonoros utilizados pelo jogo
      * Evita vazamento de memória ao fechar ou reiniciar o jogo
      */
@@ -520,6 +600,11 @@ public class Jogo extends Game {
         texturaPenguin.dispose();
         texturaTrower.dispose();
         texturaJaminger.dispose();
+
+        // Libera o gerenciador de rede, se existir
+        if (networkManager != null) {
+            networkManager.dispose();
+        }
 
         super.dispose();
     }

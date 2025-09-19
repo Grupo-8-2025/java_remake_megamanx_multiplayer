@@ -8,11 +8,13 @@ import com.tp2.megamanx.Jogo;
 public class Lwjgl3Launcher {
     public static void main(String[] args) {
         if (StartupHelper.startNewJvmIfRequired()) return; // This handles macOS support and helps on Windows.
-        createApplication();
+        createApplication(args);
     }
 
-    private static Lwjgl3Application createApplication() {
-        return new Lwjgl3Application(new Jogo(), getDefaultConfiguration());
+    private static Lwjgl3Application createApplication(String[] args) {
+        Jogo jogo = new Jogo();
+        jogo.setArgs(args);
+        return new Lwjgl3Application(jogo, getDefaultConfiguration());
     }
 
     private static Lwjgl3ApplicationConfiguration getDefaultConfiguration() {
