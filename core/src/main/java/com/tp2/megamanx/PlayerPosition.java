@@ -1,5 +1,9 @@
 package com.tp2.megamanx;
 
+
+/*
+ * Classe simples para representar a posição do jogador na rede.
+ */
 public class PlayerPosition {
     public float x, y;
     public int id; // 0 para player1, 1 para player2

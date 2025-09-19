@@ -94,18 +94,18 @@ public class Jogo extends Game {
      * Atualiza a posição do jogador remoto (segundo jogador) no modo multiplayer
      * @param pos Objeto contendo a nova posição e ID do jogador
      */
-    public void setArgs(String[] args) {
+    public void setArgs(String[] args) { // Puxa os Argumentos da Linha de Comando
         this.args = args;
-        if (args != null && args.length > 0) {
-            if ("server".equals(args[0])) {
-                isServer = true;
-            } else if ("client".equals(args[0])) {
-                isServer = false;
+        if (args != null && args.length > 0) { // Verifica se os argumentos são válidos
+            if ("server".equals(args[0])) { // Verifica se o argumento é "server"
+                isServer = true;// O jogo abre como Servidor
+            } else if ("client".equals(args[0])) { // Verifica se o argumento é "client"
+                isServer = false; // O jogo abre como Cliente
             } else {
-                isServer = true; // Default to server
+                isServer = true; // O jogo abre como Servidor
             }
         } else {
-            isServer = true; // Default to server
+            isServer = true; // O jogo abre como Servidor
         }
     }
 
