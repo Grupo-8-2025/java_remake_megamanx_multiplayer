@@ -338,9 +338,9 @@ public class Pinguim extends Personagem implements Inimigo {
             iterarDeltaTime();
             setRegion(774, 13, 43, 47); // Frame de morte
 
-            if (deltaTime >= 5.0f) {
+            //if (deltaTime >= 5.0f) {
                 setPosicao(-500, -500); // Remove do cenário
-            }
+            //}
         }
     }
 

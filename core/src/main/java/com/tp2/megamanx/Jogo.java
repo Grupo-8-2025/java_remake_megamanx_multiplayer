@@ -80,6 +80,10 @@ public class Jogo extends Game {
     private boolean isServer = false; // Indica se esta instância é o servidor
     private String[] args; // Argumentos de linha de comando
 
+    // Segunda Fase
+    private boolean segundaFaseAtivada = false; // Flag para indicar se a segunda fase foi ativada
+    private Pinguim penguin2; // Segundo chefe Penguin na segunda fase
+
     /**
      * Método chamado na inicialização do jogo
      * Configura a tela inicial e cria todos os objetos necessários
@@ -143,7 +147,7 @@ public class Jogo extends Game {
 
         carregaTexturas();  // Carrega todas as texturas necessárias
         criaMapa();         // Cria e configura o mapa do jogo
-        criaPersonagens();  // Cria todos os personagens do jogo
+        criaPersonagens(segundaFaseAtivada);  // Cria todos os personagens do jogo
 
         networkManager = new NetworkManager(this, isServer); // Inicializa o gerenciador de rede
         remoteMegaMan = new MegaMan(texturaMegaMan, 0, 0); // Inicializa o personagem remoto
@@ -176,20 +180,28 @@ public class Jogo extends Game {
     /**
      * Cria todos os personagens do jogo, incluindo MegaMan e inimigos
      */
-    private void criaPersonagens(){
-        criarInimigos();
+    private void criaPersonagens(boolean segundaFase){
+        criarInimigos(segundaFase);
         megaMan = new MegaMan(texturaMegaMan, 330, 2517); // Cria o MegaMan na posição inicial
         personagens.add(megaMan);                         // Adiciona MegaMan à lista de personagens
         personagens.add(penguin);                         // Adiciona o chefe Penguin
+        if (segundaFaseAtivada) {
+            personagens.add(penguin2);                    // Adiciona o segundo chefe Penguin na segunda fase
+            
+        }
     }
 
     /**
      * Cria e posiciona todos os inimigos do jogo
      * Sorteia posições válidas e alterna entre tipos de inimigos
      */
-    private void criarInimigos(){
+    private void criarInimigos(boolean segundaFase){
         penguin = new Pinguim(texturaPenguin, 11635, 3000); // Cria o chefe Penguin
         inimigos.add(penguin);
+        if (segundaFase) {
+            penguin2 = new Pinguim(texturaPenguin, 5855, 900); // Cria o segundo chefe Penguin
+            inimigos.add(penguin2); 
+        }
         
         // Cria ataques padrões para inimigos
         Ataque ataqueTrower = new Ataque(new TextureRegion(TipoAtaque.BOLA_NEVE.getTextura(), 
@@ -284,6 +296,7 @@ public class Jogo extends Game {
         mutaSomFundo(); // Verifica input para mutar/desmutar som de fundo
         desenhaItens(); // Desenha todos os elementos visuais
         super.render(); // Chama renderização padrão do LibGDX
+        //System.out.println("Posicao X MegaMan: " + megaMan.getPosX() + " | Posicao Y MegaMan: " + megaMan.getPosY());
     }
 
     /* Muta o som de fundo */
@@ -311,9 +324,20 @@ public class Jogo extends Game {
             personagem.atacar();
             personagem.morrer();
             // Se o chefe morreu, exibe tela de vitória
-            if(penguin.getVida() <= 0){
-                somVitoria.play();
-                setScreen(new TelaVitoria(this));
+            if(penguin.getVida() <= 0 && !segundaFaseAtivada){
+                segundaFaseAtivada = true; // Marca que a segunda fase foi ativada
+                dispose();
+                criaObjetosJogo(); // Reinicia o jogo para a segunda fase
+            } 
+            
+            // Se o chefe morreu na segunda fase, exibe tela de vitória
+            else if(penguin.getVida() <= 0 && segundaFaseAtivada){
+                if(!gameOver){
+                    somVitoria.play();
+                    gameOver = true;
+                    segundaFaseAtivada = false; // Reseta a flag para futuras partidas
+                    setScreen(new TelaVitoria(this));
+                }
             }
             // Se o MegaMan morreu, processa vidas e game over
             if (megaMan.isMorreu() && !gameOver) {
@@ -325,6 +349,7 @@ public class Jogo extends Game {
                     gameOver = false;
                 } else {
                     gameOver = true;
+                    segundaFaseAtivada = false; // Reseta a flag para futuras partidas
                     setScreen(new TelaGameOver(this));
                 }
             }
@@ -341,6 +366,11 @@ public class Jogo extends Game {
         inimigos.reset();
 
         penguin.atualizar(); // Atualiza lógica do chefe
+        if (segundaFaseAtivada) {
+            penguin2.atualizar(); // Atualiza lógica do segundo chefe na segunda fase
+        }else if (segundaFaseAtivada && penguin2.getVida() <= 0) {
+            penguin2.morrer(); // Se o segundo chefe morreu, processa morte
+        }
     }
 
     /**
