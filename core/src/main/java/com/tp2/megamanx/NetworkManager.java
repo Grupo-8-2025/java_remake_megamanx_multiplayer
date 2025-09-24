@@ -23,7 +23,7 @@ public class NetworkManager {
         this.jogo = jogo;
         this.isServer = isServer;
 
-        if (isServer) { // O jogo abre como Servidor
+        if (this.isServer) { // O jogo abre como Servidor
             startServer();
         } else { // Abre como Cliente
             startClient();

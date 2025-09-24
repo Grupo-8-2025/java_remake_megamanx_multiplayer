@@ -163,10 +163,14 @@ public class Jogo extends Game {
 
         somPadrao.play(somPadrao.loop()); // Inicia a música de fundo em loop
         somPadraoTocando = true;
+        if (isMultiplayer && networkManager == null) {
+            iniciaMultiplayer(); // Inicializa o modo multiplayer se ativado
+        }
     }
 
     private void iniciaMultiplayer() {
         if (isMultiplayer) {
+            System.out.println(isServer);
             networkManager = new NetworkManager(this, isServer); // Inicializa o gerenciador de rede
         }
     }
@@ -291,6 +295,7 @@ public class Jogo extends Game {
                 if (isMultiplayer && remoteMegaMan == null) {
                     remoteMegaMan = new MegaMan(texturaMegaMan, 0, 0); // Inicializa o personagem remoto após carregar texturas
                 }
+                
             }
             // Atualiza o foco da câmera para seguir o MegaMan
             cameraFoco.set(megaMan.getPosX() + megaMan.getCorpo().getBoundingRectangle().width, 
@@ -311,6 +316,7 @@ public class Jogo extends Game {
             }
 
             // Envia a posição do jogador local e atualiza a posição do jogador remoto
+            
             if (isMultiplayer && networkManager != null) {
                 networkManager.sendPlayerPosition(megaMan.getPosX(), megaMan.getPosY(), isServer ? 0 : 1); // ID 0 para servidor, 1 para cliente
                 if (isServer) {
@@ -581,12 +587,13 @@ public class Jogo extends Game {
         this.isServer = isServer;
     }
 
+    public boolean getIsServer (){
+        return isServer;
+    }
+
     // Define se o jogo está em modo multiplayer
     public void setIsMultiplayer(boolean isMultiplayer) {
         this.isMultiplayer = isMultiplayer;
-        if (isMultiplayer && networkManager == null) {
-            iniciaMultiplayer(); // Inicializa o modo multiplayer se ativado
-        }
     }
 
     public void setSegundaFaseAtivada(boolean ativada) {

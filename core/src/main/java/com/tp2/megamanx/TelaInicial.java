@@ -80,6 +80,7 @@ public class TelaInicial implements Screen {
             modoSelecionado = true;
             jogo.setJogoIniciado(true);
         } else if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.NUM_2)) {
+            System.out.println("Apertou 2");
             jogo.setIsMultiplayer(true);
             jogo.setIsServer(true);
             digitandoNome = false; // Sai da tela inicial
@@ -92,6 +93,7 @@ public class TelaInicial implements Screen {
             modoSelecionado = true;
             jogo.setJogoIniciado(true);
         }
+        
     }
 
     // Mostra a tela inicial
