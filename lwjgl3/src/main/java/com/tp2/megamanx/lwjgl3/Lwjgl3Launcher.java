@@ -13,7 +13,7 @@ public class Lwjgl3Launcher {
 
     private static Lwjgl3Application createApplication(String[] args) {
         Jogo jogo = new Jogo();
-        jogo.setArgs(args);
+        //jogo.setArgs(args);
         return new Lwjgl3Application(jogo, getDefaultConfiguration());
     }
 

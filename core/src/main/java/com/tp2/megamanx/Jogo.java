@@ -32,6 +32,9 @@ import com.badlogic.gdx.audio.Sound;
  */
 public class Jogo extends Game {
 
+    private boolean jogoIniciado = false; // Flag para indicar se o jogo foi iniciado
+    private boolean objetosCriados = false; // Flag para indicar se os objetos do jogo foram criados
+
     // Texturas dos personagens principais e elementos visuais
     private Texture texturaMegaMan;      // Textura do personagem jogável Mega Man
     private Texture texturaPenguin;      // Textura do chefe Penguin
@@ -76,13 +79,17 @@ public class Jogo extends Game {
     // Renderização de formas geométricas (barras de vida)
     private ShapeRenderer shapeRenderer;
 
+    // Gerenciamento de rede
     private NetworkManager networkManager; // Gerencia a comunicação em rede
     private boolean isServer = false; // Indica se esta instância é o servidor
+    private boolean isMultiplayer = false; // Indica se o jogo está em modo multiplayer
     private String[] args; // Argumentos de linha de comando
 
     // Segunda Fase
     private boolean segundaFaseAtivada = false; // Flag para indicar se a segunda fase foi ativada
     private Pinguim penguin2; // Segundo chefe Penguin na segunda fase
+
+
 
     /**
      * Método chamado na inicialização do jogo
@@ -91,27 +98,32 @@ public class Jogo extends Game {
     @Override
     public void create() {
         setScreen(new TelaInicial(this)); // Exibe tela inicial
-        criaObjetosJogo();                // Inicializa todos os componentes do jogo
     }
 
     /**
      * Atualiza a posição do jogador remoto (segundo jogador) no modo multiplayer
      * @param pos Objeto contendo a nova posição e ID do jogador
      */
+    /* 
     public void setArgs(String[] args) { // Puxa os Argumentos da Linha de Comando
         this.args = args;
         if (args != null && args.length > 0) { // Verifica se os argumentos são válidos
             if ("server".equals(args[0])) { // Verifica se o argumento é "server"
                 isServer = true;// O jogo abre como Servidor
+                isMultiplayer = true; // Ativa modo multiplayer
             } else if ("client".equals(args[0])) { // Verifica se o argumento é "client"
                 isServer = false; // O jogo abre como Cliente
+                isMultiplayer = true; // Ativa modo multiplayer
             } else {
                 isServer = true; // O jogo abre como Servidor
+                isMultiplayer = false; // Modo single player
             }
         } else {
             isServer = true; // O jogo abre como Servidor
+            isMultiplayer = false; // Modo single player
         }
     }
+    */
 
     /**
      * Método responsável por criar e inicializar todos os objetos do jogo
@@ -126,7 +138,7 @@ public class Jogo extends Game {
         shapeRenderer = new ShapeRenderer();          // Renderizador para formas geométricas
         
         // Configuração da fonte para exibir textos
-        gerador = new FreeTypeFontGenerator(Gdx.files.internal("font.ttf")); // Carrega arquivo de fonte
+        gerador = new FreeTypeFontGenerator(Gdx.files.internal("assets/GAMERIA.ttf")); // Carrega arquivo de fonte
         parametro = new FreeTypeFontGenerator.FreeTypeFontParameter();        // Cria parâmetros da fonte
         parametro.size = 24;                          // Define tamanho da fonte
         parametro.color = Color.WHITE;                // Define cor branca para a fonte
@@ -134,9 +146,9 @@ public class Jogo extends Game {
         gerador.dispose();                            // Libera recursos do gerador
 
         // Carregamento dos efeitos sonoros
-        somMorte = Gdx.audio.newSound(Gdx.files.internal("sons/megaman-x-death-sound-effect.mp3"));
-        somVitoria = Gdx.audio.newSound(Gdx.files.internal("sons/mmx-stage-clear.mp3"));
-        somPadrao = Gdx.audio.newSound(Gdx.files.internal("sons/mega-man-x2-snes-music-first-stage-audiotrimmer.mp3"));
+        somMorte = Gdx.audio.newSound(Gdx.files.internal("assets/sons/megaman-x-death-sound-effect.mp3"));
+        somVitoria = Gdx.audio.newSound(Gdx.files.internal("assets/sons/mmx-stage-clear.mp3"));
+        somPadrao = Gdx.audio.newSound(Gdx.files.internal("assets/sons/mega-man-x2-snes-music-first-stage-audiotrimmer.mp3"));
 
         random = new Random();                        // Gerador de números aleatórios
         posicoesValidas = new ArrayList<>();          // Lista para armazenar posições válidas
@@ -149,11 +161,14 @@ public class Jogo extends Game {
         criaMapa();         // Cria e configura o mapa do jogo
         criaPersonagens(segundaFaseAtivada);  // Cria todos os personagens do jogo
 
-        networkManager = new NetworkManager(this, isServer); // Inicializa o gerenciador de rede
-        remoteMegaMan = new MegaMan(texturaMegaMan, 0, 0); // Inicializa o personagem remoto
-
         somPadrao.play(somPadrao.loop()); // Inicia a música de fundo em loop
         somPadraoTocando = true;
+    }
+
+    private void iniciaMultiplayer() {
+        if (isMultiplayer) {
+            networkManager = new NetworkManager(this, isServer); // Inicializa o gerenciador de rede
+        }
     }
 
     /**
@@ -161,7 +176,7 @@ public class Jogo extends Game {
      * Carrega o arquivo TMX do mapa com as dimensões especificadas
      */
     private void criaMapa(){
-        mapa = new Mapa("maps/Mapa.tmx", 800, 600);
+        mapa = new Mapa("assets/maps/Mapa.tmx", 800, 600);
     }
 
     /**
@@ -170,11 +185,11 @@ public class Jogo extends Game {
      */
     private void carregaTexturas(){
         TipoAtaque.carregarTodasTexturas();                                           // Carrega texturas dos ataques
-        texturaMegaMan = new Texture("imagens/MegaMan/megaMan.png");                 // Textura do Mega Man
-        texturaPenguin = new Texture("imagens/ChilPenguin/inimigos/Penguin/penguin.png"); // Textura do Penguin
-        texturaTrower = new Texture("imagens/ChilPenguin/inimigos/now.png");         // Textura do Trower
-        texturaJaminger = new Texture("imagens/ChilPenguin/inimigos/jaminger.png");  // Textura do Jaminger
-        texturaFundo = new Texture("fundos/cena-de-pixels-graficos-de-8-bits-com-montanhas.jpg"); // Fundo do jogo
+        texturaMegaMan = new Texture("assets/imagens/MegaMan/megaMan.png");                 // Textura do Mega Man
+        texturaPenguin = new Texture("assets/imagens/ChilPenguin/inimigos/Penguin/penguin.png"); // Textura do Penguin
+        texturaTrower = new Texture("assets/imagens/ChilPenguin/inimigos/now.png");         // Textura do Trower
+        texturaJaminger = new Texture("assets/imagens/ChilPenguin/inimigos/jaminger.png");  // Textura do Jaminger
+        texturaFundo = new Texture("assets/fundos/cena-de-pixels-graficos-de-8-bits-com-montanhas.jpg"); // Fundo do jogo
     }
 
     /**
@@ -254,14 +269,14 @@ public class Jogo extends Game {
      * Determina todas as posições válidas para spawn de inimigos com base nas plataformas do mapa
      */
     private void determinarPosicoesValidas(){
-    posicoesValidas.clear();
-    for(Rectangle plataforma : mapa.getChaos()){
-            float posYplataforma = plataforma.y + plataforma.height;
-            float posXplataforma = plataforma.x + plataforma.width;
-            posicoesValidas.add(new Vector2(posXplataforma, posYplataforma));
+        posicoesValidas.clear();
+        for(Rectangle plataforma : mapa.getChaos()){
+                float posYplataforma = plataforma.y + plataforma.height;
+                float posXplataforma = plataforma.x + plataforma.width;
+                posicoesValidas.add(new Vector2(posXplataforma, posYplataforma));
+        }
+        System.out.println("Posições válidas encontradas: " + posicoesValidas.size());
     }
-    System.out.println("Posições válidas encontradas: " + posicoesValidas.size());
-}
 
     /**
      * Loop principal de renderização do jogo
@@ -269,34 +284,45 @@ public class Jogo extends Game {
      */
     @Override
     public void render() {
-        // Atualiza o foco da câmera para seguir o MegaMan
-        cameraFoco.set(megaMan.getPosX() + megaMan.getCorpo().getBoundingRectangle().width, 
-        megaMan.getPosY() + (megaMan.getCorpo().getBoundingRectangle().height/2));
-        camera.position.set(cameraFoco, 0);
-        camera.update();
-        batch.setProjectionMatrix(camera.combined); 
-        
-        // Limpa a tela com cor branca
-        Gdx.gl.glClearColor(255f, 255f, 255f, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+        if (jogoIniciado) {
+            if (objetosCriados == false) {
+                criaObjetosJogo(); // Cria os objetos do jogo se ainda não foram criados
+                objetosCriados = true; // Marca que os objetos foram criados
+                if (isMultiplayer && remoteMegaMan == null) {
+                    remoteMegaMan = new MegaMan(texturaMegaMan, 0, 0); // Inicializa o personagem remoto após carregar texturas
+                }
+            }
+            // Atualiza o foco da câmera para seguir o MegaMan
+            cameraFoco.set(megaMan.getPosX() + megaMan.getCorpo().getBoundingRectangle().width, 
+            megaMan.getPosY() + (megaMan.getCorpo().getBoundingRectangle().height/2));
+            camera.position.set(cameraFoco, 0);
+            camera.update();
+            batch.setProjectionMatrix(camera.combined); 
+            
+            // Limpa a tela com cor branca
+            Gdx.gl.glClearColor(255f, 255f, 255f, 1);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Se o MegaMan não morreu, processa lógica de ataques, atualização e colisões
-        if(!megaMan.isMorreu()){
-            ataquesPersonagens();
-            atualizarPersonagens();
-            colisoes();
+            // Se o MegaMan não morreu, processa lógica de ataques, atualização e colisões
+            if(!megaMan.isMorreu()){
+                ataquesPersonagens();
+                atualizarPersonagens();
+                colisoes();
+            }
+
+            // Envia a posição do jogador local e atualiza a posição do jogador remoto
+            if (isMultiplayer && networkManager != null) {
+                networkManager.sendPlayerPosition(megaMan.getPosX(), megaMan.getPosY(), isServer ? 0 : 1); // ID 0 para servidor, 1 para cliente
+                if (isServer) {
+                    networkManager.sendEnemyPositions(); // Envia posições dos inimigos se for servidor
+                }
+            }
+
+            mutaSomFundo(); // Verifica input para mutar/desmutar som de fundo
+            desenhaItens(); // Desenha todos os elementos visuais
+            //System.out.println("Posicao X MegaMan: " + megaMan.getPosX() + " | Posicao Y MegaMan: " + megaMan.getPosY());
         }
-
-        // Envia a posição do jogador local e atualiza a posição do jogador remoto
-        networkManager.sendPlayerPosition(megaMan.getPosX(), megaMan.getPosY(), isServer ? 0 : 1); // ID 0 para servidor, 1 para cliente
-        if (isServer) {
-            networkManager.sendEnemyPositions(); // Envia posições dos inimigos se for servidor
-        }
-
-        mutaSomFundo(); // Verifica input para mutar/desmutar som de fundo
-        desenhaItens(); // Desenha todos os elementos visuais
-        super.render(); // Chama renderização padrão do LibGDX
-        //System.out.println("Posicao X MegaMan: " + megaMan.getPosX() + " | Posicao Y MegaMan: " + megaMan.getPosY());
+        super.render(); // Chama o método render da classe pai
     }
 
     /* Muta o som de fundo */
@@ -522,7 +548,7 @@ public class Jogo extends Game {
         personagens.reset();
 
         // Desenha o jogador remoto (segundo jogador) se estiver ativo
-        if (remoteMegaMan.getPosX() != 0 || remoteMegaMan.getPosY() != 0) {
+        if (remoteMegaMan != null && (remoteMegaMan.getPosX() != 0 || remoteMegaMan.getPosY() != 0)) {
             remoteMegaMan.draw(batch);
         }
     }
@@ -540,6 +566,32 @@ public class Jogo extends Game {
         }
         personagens.reset();
     }
+    
+    /*
+     * Setters
+     */
+
+    // Inicia o jogo, chamado pela tela inicial
+    public void setJogoIniciado(boolean iniciado) {
+        this.jogoIniciado = iniciado;
+    }
+
+    // Define se esta instância do jogo é o servidor
+    public void setIsServer(boolean isServer) {
+        this.isServer = isServer;
+    }
+
+    // Define se o jogo está em modo multiplayer
+    public void setIsMultiplayer(boolean isMultiplayer) {
+        this.isMultiplayer = isMultiplayer;
+        if (isMultiplayer && networkManager == null) {
+            iniciaMultiplayer(); // Inicializa o modo multiplayer se ativado
+        }
+    }
+
+    public void setSegundaFaseAtivada(boolean ativada) {
+        this.segundaFaseAtivada = ativada;
+    }
 
     /**
      * Atualiza o viewport quando a janela é redimensionada
@@ -548,7 +600,9 @@ public class Jogo extends Game {
      */
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height);
+        if (viewport != null) {
+            viewport.update(width, height);
+        }
     }
 
     /**
@@ -566,7 +620,9 @@ public class Jogo extends Game {
      * @param pos Objeto contendo a nova posição e ID do jogador
      */
     public void updateRemotePlayer(PlayerPosition pos) {
-        remoteMegaMan.setPosicao(pos.x, pos.y);
+        if (remoteMegaMan != null) {
+            remoteMegaMan.setPosicao(pos.x, pos.y);
+        }
     }
 
     /**
@@ -616,20 +672,36 @@ public class Jogo extends Game {
             batch.dispose();
         }
         
-        somMorte.pause();
-        somMorte.dispose();
-        somPadrao.pause();
-        somPadrao.dispose();
-        somVitoria.pause();
-        somVitoria.dispose();
+        if (somMorte != null) {
+            somMorte.pause();
+            somMorte.dispose();
+        }
+        if (somPadrao != null) {
+            somPadrao.pause();
+            somPadrao.dispose();
+        }
+        if (somVitoria != null) {
+            somVitoria.pause();
+            somVitoria.dispose();
+        }
 
-        fonteVida.dispose();
+        if (fonteVida != null) {
+            fonteVida.dispose();
+        }
 
         //TipoAtaque.disposeTodasTexturas();
-        texturaMegaMan.dispose();
-        texturaPenguin.dispose();
-        texturaTrower.dispose();
-        texturaJaminger.dispose();
+        if (texturaMegaMan != null) {
+            texturaMegaMan.dispose();
+        }
+        if (texturaPenguin != null) {
+            texturaPenguin.dispose();
+        }
+        if (texturaTrower != null) {
+            texturaTrower.dispose();
+        }
+        if (texturaJaminger != null) {
+            texturaJaminger.dispose();
+        }
 
         // Libera o gerenciador de rede, se existir
         if (networkManager != null) {

@@ -1,5 +1,8 @@
 package com.tp2.megamanx;
 
+import java.lang.reflect.Array;
+import java.util.ArrayList;
+
 //import com.badlogic.gdx.ApplicationListener;
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
@@ -28,6 +31,7 @@ public class TelaInicial implements Screen {
     private String nomeJogador = "";
     private boolean digitandoNome = true;
     private Jogo jogo;
+    private boolean modoSelecionado = false;
 
     //Cria a tela inicial
     public TelaInicial(Jogo jogo){
@@ -36,14 +40,14 @@ public class TelaInicial implements Screen {
 
     //Cria os elementos da tela inicial
     private void create() {
-        fontGenerator = new FreeTypeFontGenerator(Gdx.files.internal("font.ttf"));
+        fontGenerator = new FreeTypeFontGenerator(Gdx.files.internal("assets/GAMERIA2.ttf"));
         fontParameter = new FreeTypeFontParameter();
         fontParameter.size = 20;
         font = fontGenerator.generateFont(fontParameter);
 
         spriteBatch = new SpriteBatch();
         portTela = new FitViewport(800, 500);//Define o tamanho da tela
-        imgFundoMegaManX = new Texture("imagens/TelaInicial/Mega_Man_X_Logo.png");
+        imgFundoMegaManX = new Texture("assets/imagens/TelaInicial/Mega_Man_X_Logo.png");
         //imgCarregando = new Texture("winXPLoading.jpeg");
     }
 
@@ -57,6 +61,37 @@ public class TelaInicial implements Screen {
         font.draw(spriteBatch, "Digite seu nome:", 10, worldHeight - 350);
         // (digitandoNome ? "|" : "") faz com que o cursor (|), caso digitandoNome for verdade, pisque enquanto o jogador digita o nome
         font.draw(spriteBatch, nomeJogador + (digitandoNome ? "|" : ""), 10, worldHeight - 370);
+    }
+
+    // Desenha a tela de seleção de modo
+    public void desenharTelaSelecaoModo(BitmapFont font, SpriteBatch spriteBatch, float worldHeight) {
+        font.setColor(Color.SKY);
+        font.draw(spriteBatch, "SELECIONE O MODO DE JOGO", 10, worldHeight - 300);
+        font.draw(spriteBatch, "1 - Modo Singleplayer", 10, worldHeight - 320);
+        font.draw(spriteBatch, "2 - Modo Multiplayer (Servidor)", 10, worldHeight - 340);
+        font.draw(spriteBatch, "3 - Modo Multiplayer (Cliente)", 10, worldHeight - 360);
+    }
+
+    // Verifica se o jogador escolheu o modo de jogo
+    public void verificaSelecaoModo() {
+        if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.NUM_1)) {
+            jogo.setIsMultiplayer(false);
+            digitandoNome = false; // Sai da tela inicial
+            modoSelecionado = true;
+            jogo.setJogoIniciado(true);
+        } else if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.NUM_2)) {
+            jogo.setIsMultiplayer(true);
+            jogo.setIsServer(true);
+            digitandoNome = false; // Sai da tela inicial
+            modoSelecionado = true;
+            jogo.setJogoIniciado(true);
+        } else if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.NUM_3)) {
+            jogo.setIsMultiplayer(true);
+            jogo.setIsServer(false);
+            digitandoNome = false; // Sai da tela inicial
+            modoSelecionado = true;
+            jogo.setJogoIniciado(true);
+        }
     }
 
     // Mostra a tela inicial
@@ -84,7 +119,12 @@ public class TelaInicial implements Screen {
 
         // Se apertar enter, para de desenhar a tela inicial
         if (!digitandoNome) {
-            jogo.setScreen(null);    
+            desenharTelaSelecaoModo(font, spriteBatch, worldHeight);
+            if (!modoSelecionado) {
+                verificaSelecaoModo();
+            } else {
+                jogo.setScreen(null);
+            }  
         } 
         // Se nao, desenha a tela inicial
         else {

@@ -8,24 +8,24 @@ import com.badlogic.gdx.graphics.Texture;
  */
 public enum TipoAtaque {
     // Ataques do MegaMan
-    TIRO_NORMAL(2, 5, "imagens/MegaMan/ataques/tiroNormal.png", true, 
+    TIRO_NORMAL(2, 5, "assets/imagens/MegaMan/ataques/tiroNormal.png", true, 
     true, 1, 15, 0, 0, 15, 15, 3, 15, 15, 0, 15, 15),
-    TIRO_AZUL(3, 5, "imagens/MegaMan/ataques/tiroAzul.png", true, 
+    TIRO_AZUL(3, 5, "assets/imagens/MegaMan/ataques/tiroAzul.png", true, 
     true, 5, 40, 0, 0, 40, 32, 5, 40, 200, 0, 40, 32),
-    TIRO_VERDE(3, 5, "imagens/MegaMan/ataques/tiroVerde.png", true, 
+    TIRO_VERDE(3, 5, "assets/imagens/MegaMan/ataques/tiroVerde.png", true, 
     true, 7, 40, 0, 0, 40, 24, 5, 40, 180, 0, 40, 24),
-    TIRO_ROSA(4, 5, "imagens/MegaMan/ataques/tiroRosa.png", false, 
+    TIRO_ROSA(4, 5, "assets/imagens/MegaMan/ataques/tiroRosa.png", false, 
     true, 9, 32, 0, 0, 32, 64, 9, 32, 0, 0, 32, 64),
     // Ataques do chefe e inimigos
-    BOLA_GELO(4, 5, "imagens/ChilPenguin/inimigos/Penguin/shotgun.png", true, 
+    BOLA_GELO(4, 5, "assets/imagens/ChilPenguin/inimigos/Penguin/shotgun.png", true, 
     false, 1, 15, 0, 0, 15, 15, 1, 0, 0, 0, 0, 0),
-    PINGUIN_GELO(2, 0, "imagens/ChilPenguin/inimigos/Penguin/pinguinGelo.png", true, 
+    PINGUIN_GELO(2, 0, "assets/imagens/ChilPenguin/inimigos/Penguin/pinguinGelo.png", true, 
     false, 3, 28, 0, 0, 28, 32, 1, 28, 84, 0, 28, 32),
-    SOPRO_GELO(0, 5, "imagens/ChilPenguin/inimigos/Penguin/sopro.png", true, 
+    SOPRO_GELO(0, 5, "assets/imagens/ChilPenguin/inimigos/Penguin/sopro.png", true, 
     false, 2, 17, 0, 0, 17, 16, 2, 17, 0, 0, 17, 16),
-    BOLA_NEVE(2, -5, "imagens/ChilPenguin/inimigos/neve.png", true, 
+    BOLA_NEVE(2, -5, "assets/imagens/ChilPenguin/inimigos/neve.png", true, 
     false, 1, 8, 0, 32, 8, 8, 3, 40, 40, 0, 40, 40),
-    DISCO(3, -5, "imagens/ChilPenguin/inimigos/disco.png", true, 
+    DISCO(3, -5, "assets/imagens/ChilPenguin/inimigos/disco.png", true, 
     false, 1, 15, 0, 0, 15, 15, 1, 15, 15, 0, 15, 15);
 
     // Dano causado pelo ataque

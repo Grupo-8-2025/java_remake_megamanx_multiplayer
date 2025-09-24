@@ -31,13 +31,28 @@ public class NetworkManager {
     }
 
     private void startServer() {
-        server = new Server();
-        registerClasses(server); // Registra as classes que serão enviadas
-        server.start(); // Inicia o servidor
-        try {
-            server.bind(54555, 54777); // Portas padrão do KryoNet
-        } catch (Exception e) {
-            Gdx.app.error("Network", "Failed to start server", e); //Mostra o erro no log
+        boolean bound = false;
+        int basePort = 54555;
+        for (int i = 0; i < 10 && !bound; i++) {
+            int tcpPort = basePort + i;
+            int udpPort = tcpPort + 222; // 54777 - 54555 = 222
+            try {
+                server = new Server();
+                registerClasses(server); // Registra as classes que serão enviadas
+                server.start(); // Inicia o servidor
+                server.bind(tcpPort, udpPort);
+                bound = true;
+                Gdx.app.log("Network", "Server bound to ports TCP: " + tcpPort + ", UDP: " + udpPort);
+            } catch (Exception e) {
+                Gdx.app.log("Network", "Failed to bind to ports TCP: " + tcpPort + ", UDP: " + udpPort + ", trying next...");
+                if (server != null) {
+                    server.stop();
+                    server = null;
+                }
+            }
+        }
+        if (!bound) {
+            Gdx.app.error("Network", "Failed to start server on any port");
             server = null; // Disabilita o servidor se falhar
         }
 
@@ -57,10 +72,21 @@ public class NetworkManager {
         client = new Client();
         registerClasses(client);
         client.start();
-        try {
-            client.connect(5000, "127.0.0.1", 54555, 54777); // Conecta ao servidor local
-        } catch (Exception e) {
-            Gdx.app.error("Network", "Failed to connect to server", e); //Mostra o erro no log
+        boolean connected = false;
+        int basePort = 54555;
+        for (int i = 0; i < 10 && !connected; i++) {
+            int tcpPort = basePort + i;
+            int udpPort = tcpPort + 222;
+            try {
+                client.connect(5000, "127.0.0.1", tcpPort, udpPort);
+                connected = true;
+                Gdx.app.log("Network", "Client connected to ports TCP: " + tcpPort + ", UDP: " + udpPort);
+            } catch (Exception e) {
+                Gdx.app.log("Network", "Failed to connect to ports TCP: " + tcpPort + ", UDP: " + udpPort + ", trying next...");
+            }
+        }
+        if (!connected) {
+            Gdx.app.error("Network", "Failed to connect to server on any port");
             client = null; //Disabilita o cliente se falhar
         }
 

@@ -1,4 +1,5 @@
 GAMERIA.ttf
+GAMERIA2.ttf
 font.ttf
 fundos/cena-de-pixels-graficos-de-8-bits-com-montanhas.jpg
 imagens/ChilPenguin/inimigos/Penguin/penguin.png

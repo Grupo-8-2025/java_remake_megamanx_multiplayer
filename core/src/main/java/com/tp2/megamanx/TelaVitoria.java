@@ -79,6 +79,7 @@ public class TelaVitoria implements Screen {
         // Verifica se o botão "Jogar Novamente" foi clicado
         if (botaoJogarNovamente.foiClicado()) {
             jogo.reset(); // Reinicia o jogo
+            jogo.setSegundaFaseAtivada(false);// Reseta a segunda fase
             jogo.setScreen(null); // Volta para o jogo
         }
         // Verifica se o botão "Voltar para o Início" foi clicado
