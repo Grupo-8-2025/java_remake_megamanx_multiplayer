@@ -655,14 +655,11 @@ public class Jogo extends Game {
      */
     public void updateEnemies(EnemyPosition pos) {
         if (!isServer) { // Apenas o cliente atualiza as posições dos inimigos
-            int i = 0;
-            inimigos.reset(); // Reinicia o iterator
-            while (inimigos.hasNext() && i < pos.x.size()) { // Enquanto houver inimigos e posições
-                Inimigo inimigo = inimigos.next(); // Pega o próximo inimigo
-                ((Personagem) inimigo).setPosicao(pos.x.get(i), pos.y.get(i)); // Atualiza posição
-                i++;
+            int numEnemies = Math.min(inimigos.getColecao().tamanho(), pos.x.size());
+            for (int i = 0; i < numEnemies; i++) {
+                Inimigo inimigo = inimigos.get(i);
+                ((Personagem) inimigo).setPosicao(pos.x.get(i), pos.y.get(i));
             }
-            inimigos.reset(); // Reinicia o iterator
         }
     }
 

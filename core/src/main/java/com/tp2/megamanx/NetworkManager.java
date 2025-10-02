@@ -37,7 +37,7 @@ public class NetworkManager {
             int tcpPort = basePort + i;
             int udpPort = tcpPort + 222; // 54777 - 54555 = 222
             try {
-                server = new Server();
+                server = new Server(1048576, 1048576); // Aumentar buffers para 1MB para evitar overflow
                 registerClasses(server); // Registra as classes que serão enviadas
                 server.start(); // Inicia o servidor
                 server.bind(tcpPort, udpPort);
@@ -69,7 +69,7 @@ public class NetworkManager {
     }
 
     private void startClient() {
-        client = new Client();
+        client = new Client(1048576, 1048576); // Aumentar buffers para 1MB para evitar overflow
         registerClasses(client);
         client.start();
         boolean connected = false;
@@ -96,10 +96,15 @@ public class NetworkManager {
                     if (object instanceof PlayerPosition) { // Se receber a posição do jogador
                         PlayerPosition pos = (PlayerPosition) object; // Atualiza a posição do jogador remoto
                         jogo.updateRemotePlayer(pos); // Atualiza a posição do jogador remoto
-                    } else if (object instanceof EnemyPosition) { // Se receber a posição dos inimigos
+                    }
+                    if (object instanceof EnemyPosition) { // Se receber a posição dos inimigos
                         EnemyPosition pos = (EnemyPosition) object; // Atualiza a posição dos inimigos
                         jogo.updateEnemies(pos); // Atualiza a posição dos inimigos
                     }
+                    //if(object instanceof PosicaoTiro){
+                        //PosicaoTiro pos = (PosicaoTiro) object; // Atualiza a posição dos tiros
+                        //jogo.updateTiroPosition(pos);// Atualiza a posição do tiro
+                    //}
                 }
             });
         }
@@ -110,10 +115,12 @@ public class NetworkManager {
         if (network instanceof Server) { // Registra as classes que serão enviadas se a instância for um servidor
             ((Server) network).getKryo().register(PlayerPosition.class);
             ((Server) network).getKryo().register(EnemyPosition.class);
+            //((Server) network).getKryo().register(PosicaoTiro.class);
             ((Server) network).getKryo().register(ArrayList.class);  
         } else if (network instanceof Client) { // Registra as classes que serão enviadas se a instância for um cliente
             ((Client) network).getKryo().register(PlayerPosition.class);
             ((Client) network).getKryo().register(EnemyPosition.class);
+            //((Client) network).getKryo().register(PosicaoTiro.class);
             ((Client) network).getKryo().register(ArrayList.class);
         }
     }
@@ -134,6 +141,15 @@ public class NetworkManager {
             server.sendToAllTCP(pos); // Envia para todos os clientes conectados
         }
     }
+
+    public void sendTiroPositions(float x, float y, int id) {
+        PosicaoTiro pos = new PosicaoTiro(x, y, id); // Cria o objeto de posição do tiro
+        if (isServer && server != null) { // Se for o servidor
+            server.sendToAllTCP(pos); // Envia para todos os clientes conectados
+        } else if (!isServer && client != null) { // se for o cliente
+            client.sendTCP(pos); // Envia para o servidor
+        }
+    }   
 
     // Encerra a conexão de rede
     public void dispose() {
