@@ -212,7 +212,7 @@ DEFAULT_JVM_OPTS=""
 
 set -- \
         -classpath "$CLASSPATH" \
-        com.tp1.dotsandboxes.lwjgl3.Lwjgl3Launcher \
+        com.tp2.megamanx.lwjgl3.Lwjgl3Launcher \
         "$@"
 
 # Stop when "xargs" is not available.

@@ -74,7 +74,7 @@ set CLASSPATH=%APP_HOME%\lib\Jogo-DotsAndBoxes-1.0.0.jar
 
 
 @rem Execute lwjgl3
-"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %LWJGL3_OPTS%  -classpath "%CLASSPATH%" com.tp1.dotsandboxes.lwjgl3.Lwjgl3Launcher %*
+"%JAVA_EXE%" %DEFAULT_JVM_OPTS% %JAVA_OPTS% %LWJGL3_OPTS%  -classpath "%CLASSPATH%" com.tp2.megamanx.lwjgl3.Lwjgl3Launcher %*
 
 :end
 @rem End local scope for the variables with windows NT shell
