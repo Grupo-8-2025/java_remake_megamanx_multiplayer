@@ -1,4 +1,5 @@
 [compileJava, compileTestJava]*.options*.encoding = 'UTF-8'
+sourceSets.main.resources.srcDirs += [ rootProject.file('assets').path ]
 eclipse.project.name = appName + '-core'
 
 dependencies {
@@ -8,8 +9,15 @@ dependencies {
   api "com.badlogicgames.gdx:gdx:$gdxVersion"
   
   implementation 'com.github.crykn:kryonet:2.22.9'
+  implementation "com.badlogicgames.gdx:gdx-backend-headless:$gdxVersion"
 
   if(enableGraalNative == 'true') {
     implementation "io.github.berstanio:gdx-svmhelper-annotations:$graalHelperVersion"
   }
 }
+
+task copyAssets(type: Copy) {
+    from '../../assets'
+    into 'src/main/resources'
+}
+processResources.dependsOn copyAssets

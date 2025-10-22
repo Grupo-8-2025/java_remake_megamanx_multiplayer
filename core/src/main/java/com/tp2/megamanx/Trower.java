@@ -15,6 +15,12 @@ public class Trower extends Personagem implements Inimigo{
 		tipoInimigo = 3;
 	}
 
+	public Trower(Rectangle rect, float posX, float posY, Ataque ataque, float velX, float velY) {
+		super( rect, posX, posY, new Vector2(0.3f, 1.5f), 
+		3, 2, ataque, velX, velY);
+		tipoInimigo = 2;
+	}
+
 	public int tipoInimigo(){
 		return tipoInimigo;
 	}
@@ -41,6 +47,9 @@ public class Trower extends Personagem implements Inimigo{
 		deltaTime = 0f;
 	}
 
+	public Rectangle getContactArea() {
+		return contactArea;
+	}
 
 	@Override
 	public void mover(){

@@ -3,6 +3,7 @@ package com.tp2.Servidor;
 import java.util.ArrayList;
 import java.util.Random;
 
+import com.badlogic.gdx.ApplicationAdapter;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Net;
 import com.badlogic.gdx.audio.Sound;
@@ -35,6 +36,8 @@ import com.tp2.megamanx.TipoAtaque;
 import com.tp2.megamanx.Trower;
 import com.tp2.megamanx.Iterators.InimigoIterator;
 import com.tp2.megamanx.Iterators.PersonagemIterator;
+import com.badlogic.gdx.backends.headless.HeadlessApplication;
+import com.badlogic.gdx.backends.headless.HeadlessApplicationConfiguration;
 
 public class JogoServerTest {
 
@@ -45,8 +48,25 @@ public class JogoServerTest {
     private Pinguim penguin;
     private MegaMan megaMan;
 
+    private static volatile boolean headlessInitialized;
+    private static HeadlessApplication headlessApplication;
+
     public JogoServerTest() {
         network = new Network(this);
+    }
+
+    private static void ensureHeadlessEnvironment() {
+        if (headlessInitialized) {
+            return;
+        }
+        synchronized (JogoServerTest.class) {
+            if (headlessInitialized) {
+                return;
+            }
+            HeadlessApplicationConfiguration config = new HeadlessApplicationConfiguration();
+            headlessApplication = new HeadlessApplication(new ApplicationAdapter() {}, config);
+            headlessInitialized = true;
+        }
     }
 
     private void criaObjetosJogo(){
@@ -59,10 +79,11 @@ public class JogoServerTest {
 
     private void criaPersonagens(){
         criarInimigos();
-        personagens.add(info.penguin);
+        info.personagens.add(info.penguin);
     }
 
     private void criarInimigos(){
+        // Remove texture loading as it requires graphics context
         //info.texturaPenguin = new Texture("assets/imagens/ChilPenguin/inimigos/Penguin/penguin.png");
         //info.texturaJaminger = new Texture("assets/imagens/ChilPenguin/inimigos/Jaminger/jaminger.png"); // Add missing texture
         //info.texturaTrower = new Texture("assets/imagens/ChilPenguin/inimigos/Trower/trower.png"); // Add missing texture
@@ -71,22 +92,20 @@ public class JogoServerTest {
         //TipoAtaque.DISCO.setTextura(new Texture("assets/imagens/ataques/disco.png"));
 
         //info.texturaPenguin = new Texture("assets/imagens/ChilPenguin/inimigos/Penguin/penguin.png");
-        info.penguin = new Pinguim(info.texturaPenguin, 11635, 3000);
+        info.penguin = new Pinguim(new Rectangle(602, 16, 43, 44), 11635, 3000);
         //info.penguin = new Pinguim(info.texturaPenguin, 500, 2517);
         info.inimigos.add(info.penguin);
 
-        Ataque ataqueTrower = new Ataque(new TextureRegion(TipoAtaque.BOLA_NEVE.getTextura(),
-		TipoAtaque.BOLA_NEVE.getCordX1(), TipoAtaque.BOLA_NEVE.getCordY1(),
-		TipoAtaque.BOLA_NEVE.getLargura1(), TipoAtaque.BOLA_NEVE.getAltura1()), 
+        Ataque ataqueTrower = new Ataque(new Rectangle(0, 32, 8, 8), 
 		0, 0, new Vector2(0.05f, 0.5f), TipoAtaque.BOLA_NEVE, -5);
 
-        Ataque ataqueJaminger = new Ataque(new TextureRegion(TipoAtaque.DISCO.getTextura(), 
-		TipoAtaque.DISCO.getCordX1(), TipoAtaque.DISCO.getCordY1(),
-		TipoAtaque.DISCO.getLargura1(), TipoAtaque.DISCO.getAltura1()), 
+        Ataque ataqueJaminger = new Ataque(new Rectangle(0, 0, 15, 15), 
 		0, 0, new Vector2(0.05f, 0.5f), TipoAtaque.DISCO, -5);
             
         determinarPosicoesValidas();
 
+        info.personagens = new PersonagemIterator();
+        
         int indexPosicaoAnterior = -1;
         for(int i=0; i<15; i++){
             int indexPosicao = info.random.nextInt(info.posicoesValidas.size());
@@ -94,20 +113,20 @@ public class JogoServerTest {
             if(indexPosicaoAnterior == -1 || Math.abs(info.posicoesValidas.get(indexPosicao).x - info.posicoesValidas.get(indexPosicaoAnterior).x) > 800){
                 int sortearPersonagem = info.random.nextInt(2);
                 if(sortearPersonagem == 0){
-                    Jaminger jaminger = new Jaminger(info.texturaJaminger, 0, 
+                    Jaminger jaminger = new Jaminger(new Rectangle(390, 0, 39, 75), 0, 
                     0, ataqueJaminger, 0, 5);
 
-                    float posX = info.posicoesValidas.get(indexPosicao).x + jaminger.getCorpo().getBoundingRectangle().width;
+                    float posX = info.posicoesValidas.get(indexPosicao).x + jaminger.getContactArea().width;
                     float posY = info.posicoesValidas.get(indexPosicao).y;
                     jaminger.setPosicao(posX, posY);
 
                     info.inimigos.add(jaminger);
                     info.personagens.add(jaminger);
                 }else{
-                    Trower trower = new Trower(info.texturaTrower, 0, 
+                    Trower trower = new Trower(new Rectangle(0, 0, 35, 58), 0, 
                     0, ataqueTrower, 0, 5);
 
-                    float posX = info.posicoesValidas.get(indexPosicao).x - trower.getCorpo().getBoundingRectangle().width;
+                    float posX = info.posicoesValidas.get(indexPosicao).x - trower.getContactArea().width;
                     float posY = info.posicoesValidas.get(indexPosicao).y;
                     
                     trower.setPosicao(posX, posY);
@@ -124,15 +143,24 @@ public class JogoServerTest {
         return info;
     }
 
+    /* */
     private void determinarPosicoesValidas(){
-    info.posicoesValidas.clear();
-    for(Rectangle plataforma : info.mapa.getChaos()){
-            float posYplataforma = plataforma.y + plataforma.height;
-            float posXplataforma = plataforma.x + plataforma.width;
-            info.posicoesValidas.add(new Vector2(posXplataforma, posYplataforma));
+        info.posicoesValidas = new ArrayList<Vector2>();
+        /* 
+        info.mapa = new Mapa("maps/Mapa.tmx", 800, 600, true);
+        info.posicoesValidas.clear();
+        for(Rectangle plataforma : info.mapa.getChaos()){
+                float posYplataforma = plataforma.y + plataforma.height;
+                float posXplataforma = plataforma.x + plataforma.width;
+                info.posicoesValidas.add(new Vector2(posXplataforma, posYplataforma));
+        }*/
+        info.posicoesValidas.add(new Vector2(100, 50));
+        info.posicoesValidas.add(new Vector2(300, 50));
+        info.posicoesValidas.add(new Vector2(500, 50));
+        info.posicoesValidas.add(new Vector2(700, 50));
+        info.posicoesValidas.add(new Vector2(900, 50));
+        System.out.println("Posições válidas encontradas: " + info.posicoesValidas.size());
     }
-    System.out.println("Posições válidas encontradas: " + info.posicoesValidas.size());
-}
 
     public void update(float delta) {
         network.sendInformacoesServidor();
@@ -162,7 +190,6 @@ public class JogoServerTest {
     public static void main(String[] args) {
         JogoServerTest server = new JogoServerTest();
         server.criaObjetosJogo();
-        // Simple game loop for server (adjust delta as needed)
         float delta = 1 / 60f; // 60 FPS
         while (true) {
             server.update(delta);

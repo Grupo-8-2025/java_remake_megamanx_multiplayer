@@ -19,7 +19,7 @@ public class Entidade {
 	
 	protected boolean paraEsquerda;
 	protected boolean paraDireita;
-	private Rectangle contactArea;
+	protected Rectangle contactArea;
 
 	Entidade(Texture textura, TextureRegion region, float posX, float posY, Vector2 escala){
 		this.textura = textura;
@@ -45,11 +45,13 @@ public class Entidade {
 		paraEsquerda = true;
 		paraDireita = false;
 
+		/* 
 		this.corpo = new Sprite(textura);
         this.corpo.setRegion(region);
         this.corpo.setScale(escala.x, escala.y);
         this.corpo.setPosition(posX, posY);
         this.corpo.setOrigin(this.corpo.getBoundingRectangle().width/2, this.corpo.getBoundingRectangle().height/2);
+		*/
 	}
 	
 	public Rectangle getRect(){
@@ -94,7 +96,11 @@ public class Entidade {
 	public void setPosicao(float posX, float posY) {
 		setPosX(posX);
         setPosY(posY);
-        corpo.setPosition(posX, posY);
+		try {
+			corpo.setPosition(posX, posY);
+		} catch (Exception e) {
+			contactArea.setPosition(posX, posY);
+		}
 	}
 
 

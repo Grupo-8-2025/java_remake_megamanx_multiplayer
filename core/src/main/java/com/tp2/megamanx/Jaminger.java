@@ -32,6 +32,10 @@ public class Jaminger extends Personagem implements Inimigo{
     public int getDano() {
 		return dano;
 	}
+	
+	public Rectangle getContactArea() {
+		return contactArea;
+	}
 
 	public ArrayList<Ataque> getAtaquesAtivos(){
 		return ataquesAtivos;
