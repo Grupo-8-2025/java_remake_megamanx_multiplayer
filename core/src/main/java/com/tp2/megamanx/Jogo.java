@@ -268,6 +268,14 @@ public class Jogo extends Game {
         personagens.reset();
     }
 
+    public InimigoIterator getInimigos() {
+        return inimigos;
+    }
+
+    public MegaMan getMegaMan() {
+        return megaMan;
+    }
+
     private void colisoes() {
 
         gerenciadorColisoes.colisaoPersonagensPlataformas(mapa.getRetangulosColisao(), personagens);

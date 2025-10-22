@@ -12,8 +12,18 @@ public class Jaminger extends Personagem implements Inimigo{
     public Jaminger(Texture textura, float posX, float posY, Ataque ataque, float velX, float velY) {
 		super(textura, new TextureRegion(textura, 390, 0, 39, 75), posX, posY, new Vector2(0.3f, 1.5f), 
         3, 2, ataque, velX, velY);
+		tipoInimigo = 2;
 	}
 
+	public Jaminger(Rectangle rect, float posX, float posY, Ataque ataque, float velX, float velY) {
+		super( rect, posX, posY, new Vector2(0.3f, 1.5f), 
+		3, 2, ataque, velX, velY);
+		tipoInimigo = 2;
+	}
+
+	public int tipoInimigo(){
+		return tipoInimigo;
+	}
 
     public Rectangle getRect(){
 		return corpo.getBoundingRectangle();
@@ -54,18 +64,32 @@ public class Jaminger extends Personagem implements Inimigo{
 				float posXataque = rect.x - rect.width - 10;
 				float posYataque = rect.y + rect.height/1.5f;
 
-				Ataque novoAtaque = new Ataque(
-					new TextureRegion(ataque.getTipo().getTextura(),
-					ataque.getTipo().getCordX1(), ataque.getTipo().getCordY1(),
-					ataque.getTipo().getLargura1(), ataque.getTipo().getAltura1()),
-					posXataque, posYataque, new Vector2(1.5f, 2.5f), 
-					ataque.getTipo(), ataque.getTipo().getVelocidade()
-				);
+				try {
+					Ataque novoAtaque = new Ataque(
+						new TextureRegion(ataque.getTipo().getTextura(),
+						ataque.getTipo().getCordX1(), ataque.getTipo().getCordY1(),
+						ataque.getTipo().getLargura1(), ataque.getTipo().getAltura1()),
+						posXataque, posYataque, new Vector2(1.5f, 2.5f), 
+						ataque.getTipo(), ataque.getTipo().getVelocidade()
+					);
+					novoAtaque.setColidiu(false);
+					novoAtaque.setPodeDisparar(true);
+					ataquesAtivos.add(novoAtaque);
+					deltaTime = 0f;
+				} catch (Exception e) {
+					Ataque novoAtaque = new Ataque(
+						new Rectangle(0,0,39,16),
+						posXataque, posYataque, new Vector2(1.5f, 2.5f), 
+						ataque.getTipo(), ataque.getTipo().getVelocidade()
+					);
+					novoAtaque.setColidiu(false);
+					novoAtaque.setPodeDisparar(true);
+					ataquesAtivos.add(novoAtaque);
+					deltaTime = 0f;
+				}
+				
 
-				novoAtaque.setColidiu(false);
-				novoAtaque.setPodeDisparar(true);
-				ataquesAtivos.add(novoAtaque);
-				deltaTime = 0f;
+				
 			}
 
 		}

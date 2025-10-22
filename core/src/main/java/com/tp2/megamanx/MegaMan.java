@@ -155,6 +155,9 @@ public class MegaMan extends Personagem {
 
 	@Override
 	public void mover() {
+		ArrayList<Integer> teclaPressionada = new ArrayList<>();
+		teclaPressionada.add(1); //0
+		teclaPressionada.add(2); //1
 		paradoAtirando();
 		moverParaDireita();
 		moverParaEsquerda();
@@ -173,7 +176,7 @@ public class MegaMan extends Personagem {
     	//System.out.println(posX + ", " + posY);
 	 }
 
-	private void paradoAtirando(){
+	private void paradoAtirando() {
 		if(testarTecla(Input.Keys.X)){
 			apertouX = true;
 			setRegion(1254, 16, 30, 34);            
@@ -185,7 +188,7 @@ public class MegaMan extends Personagem {
         }
 	}
 
-	private void moverParaDireita(){
+	private void moverParaDireita() {
 		if(podeAndarDireita){
 			if(testarTecla(Input.Keys.RIGHT)){
 				paraDireita = true;
@@ -195,7 +198,7 @@ public class MegaMan extends Personagem {
 				velX = 5;
 				posX = posX + velX;
 				setPosicao(posX, posY);
-				
+
 				if(testarTecla(Input.Keys.X)){
 					animar(posX, 11, 38, 374, 14, 38, 36);
 					apertouX = true;
@@ -223,7 +226,7 @@ public class MegaMan extends Personagem {
 				velX = -5;
 				posX = posX + velX;
 				setPosicao(posX, posY);
-				
+
 				if(testarTecla(Input.Keys.X)){
 					animar(posX, 11, 38, 374, 14, 38, 36);
 					apertouX = true;
@@ -323,7 +326,7 @@ public class MegaMan extends Personagem {
 
 	private void descerParede() {}
 
-	private void dashParaDireita() {
+	private void dashParaDireita(){
 		if(testarTecla(Input.Keys.RIGHT) && testarTecla(Input.Keys.SHIFT_LEFT)){
             paraDireita = true;
             paraEsquerda = false;

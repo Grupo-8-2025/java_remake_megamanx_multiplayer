@@ -33,8 +33,31 @@ public class Pinguim extends Personagem implements Inimigo {
 		paraEsquerda = true;
 		paraDireita = false;
 		noAr = true;
+		tipoInimigo = 1;
 
 		criarAtaques();
+	}
+
+	public Pinguim(Rectangle rect, float posX, float posY) {
+		super( rect, posX, posY, 
+		new Vector2(0.1f, 2.0f), 32, 4, null,  0, 0);	
+		random = new Random();
+		quantAcoes = 4;
+		determinaAcao = 0;
+		duracaoAcao = 0;
+		podeMover = false;
+		podeAtacar = false;
+
+		paraEsquerda = true;
+		paraDireita = false;
+		noAr = true;
+		tipoInimigo = 1;
+
+		criarAtaques();
+	}
+
+	public int tipoInimigo(){
+		return tipoInimigo;
 	}
 
 	public void criarAtaques(){
@@ -43,19 +66,31 @@ public class Pinguim extends Personagem implements Inimigo {
 
 		ataques = new ArrayList<>();
 
-		ataques.add(
-			new Ataque(new TextureRegion(TipoAtaque.BOLA_GELO.getTextura(), 
-			TipoAtaque.BOLA_GELO.getCordX1(), TipoAtaque.BOLA_GELO.getCordY1(),
-			TipoAtaque.BOLA_GELO.getLargura1(), TipoAtaque.BOLA_GELO.getAltura1()), 
-			-100, -100, new Vector2(1f, 2.5f), TipoAtaque.BOLA_GELO, 0)
-		);
+		try {
+			ataques.add(
+				new Ataque(new TextureRegion(TipoAtaque.BOLA_GELO.getTextura(), 
+				TipoAtaque.BOLA_GELO.getCordX1(), TipoAtaque.BOLA_GELO.getCordY1(),
+				TipoAtaque.BOLA_GELO.getLargura1(), TipoAtaque.BOLA_GELO.getAltura1()), 
+				-100, -100, new Vector2(1f, 2.5f), TipoAtaque.BOLA_GELO, 0)
+			);
 
-		ataques.add(
-			new Ataque(new TextureRegion(TipoAtaque.SOPRO_GELO.getTextura(), 
-			TipoAtaque.SOPRO_GELO.getCordX1(), TipoAtaque.SOPRO_GELO.getCordY1(),
-			TipoAtaque.SOPRO_GELO.getLargura1(), TipoAtaque.SOPRO_GELO.getAltura1()), 
-			-100, -100, new Vector2(1f, 2.5f), TipoAtaque.SOPRO_GELO, 0)
-		);
+			ataques.add(
+				new Ataque(new TextureRegion(TipoAtaque.SOPRO_GELO.getTextura(), 
+				TipoAtaque.SOPRO_GELO.getCordX1(), TipoAtaque.SOPRO_GELO.getCordY1(),
+				TipoAtaque.SOPRO_GELO.getLargura1(), TipoAtaque.SOPRO_GELO.getAltura1()), 
+				-100, -100, new Vector2(1f, 2.5f), TipoAtaque.SOPRO_GELO, 0)
+			);
+		} catch (Exception e) {
+
+			ataques.add(new Ataque(new Rectangle(0,0,17,16),
+			-100, -100, new Vector2(1f, 2.5f),
+			TipoAtaque.BOLA_GELO, 0));
+
+			ataques.add(new Ataque(new Rectangle(0,0,15,15),
+			-100, -100, new Vector2(1f, 2.5f),
+			TipoAtaque.BOLA_GELO, 0));
+		}
+		
 
 		ataque = ataques.get(0);
 	}

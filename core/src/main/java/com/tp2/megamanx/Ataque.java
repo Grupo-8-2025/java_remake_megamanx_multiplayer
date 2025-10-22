@@ -1,6 +1,7 @@
 package com.tp2.megamanx;
 
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 public class Ataque extends Entidade {
@@ -14,8 +15,10 @@ public class Ataque extends Entidade {
 	private boolean podeDisparar;
 	private boolean podeDefinirPosicao;
 	private boolean disparou;
+	private Rectangle contactArea;
+	private Boolean estaUsandoRect;
 
-	Ataque(TextureRegion region, float posX, float posY, Vector2 escala, TipoAtaque tipo, float velocidade){
+	public Ataque(TextureRegion region, float posX, float posY, Vector2 escala, TipoAtaque tipo, float velocidade){
 		super(tipo.getTextura(), region, posX, posY, escala);
 		this.tipo = tipo;		
 		this.disponivel = tipo.isDisponivel();
@@ -25,6 +28,20 @@ public class Ataque extends Entidade {
 		this.podeDefinirPosicao = true;
 		this.disparou = false;
 		this.velocidade = velocidade;
+		estaUsandoRect = false;
+	}
+
+	public Ataque(Rectangle contactArea, float posX, float posY, Vector2 escala, TipoAtaque tipo, float velocidade){
+		super(contactArea, posX, posY, escala);
+		this.tipo = tipo;		
+		this.disponivel = tipo.isDisponivel();
+		this.isMegaMan = tipo.isMegaMan();
+		this.colidiu = false;
+		this.podeDisparar = false;
+		this.podeDefinirPosicao = true;
+		this.disparou = false;
+		this.velocidade = velocidade;
+		estaUsandoRect = true;
 	}
 
 
@@ -93,7 +110,13 @@ public class Ataque extends Entidade {
 	}
 
 	public void disparar() {
-		if(!colidiu && podeDisparar){
+		if(!colidiu && podeDisparar && !estaUsandoRect){
+			setPosicao(posX + velocidade, posY);
+			setRegion(tipo.getCordX1(), tipo.getCordY1(), tipo.getLargura1(), tipo.getAltura1());
+			animar(tipo.getQtdFrames1(), tipo.getIncrementa1(), tipo.getCordX1(), 
+			tipo.getCordY1(), tipo.getLargura1(), tipo.getAltura1());
+		}
+		if(!colidiu && podeDisparar && estaUsandoRect){
 			setPosicao(posX + velocidade, posY);
 			setRegion(tipo.getCordX1(), tipo.getCordY1(), tipo.getLargura1(), tipo.getAltura1());
 			animar(tipo.getQtdFrames1(), tipo.getIncrementa1(), tipo.getCordX1(), 

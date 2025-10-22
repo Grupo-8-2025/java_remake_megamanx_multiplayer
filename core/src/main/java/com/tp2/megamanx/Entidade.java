@@ -5,6 +5,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.Sprite;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 public class Entidade {
@@ -18,6 +19,7 @@ public class Entidade {
 	
 	protected boolean paraEsquerda;
 	protected boolean paraDireita;
+	private Rectangle contactArea;
 
 	Entidade(Texture textura, TextureRegion region, float posX, float posY, Vector2 escala){
 		this.textura = textura;
@@ -34,7 +36,29 @@ public class Entidade {
         this.corpo.setPosition(posX, posY);
         this.corpo.setOrigin(this.corpo.getBoundingRectangle().width/2, this.corpo.getBoundingRectangle().height/2);
 	}
+
+	Entidade(Rectangle contactArea, float posX, float posY, Vector2 escala){
+		this.contactArea = contactArea;
+		this.posX = posX;
+		this.posY = posY;
+		deltaTime = 0f;
+		paraEsquerda = true;
+		paraDireita = false;
+
+		this.corpo = new Sprite(textura);
+        this.corpo.setRegion(region);
+        this.corpo.setScale(escala.x, escala.y);
+        this.corpo.setPosition(posX, posY);
+        this.corpo.setOrigin(this.corpo.getBoundingRectangle().width/2, this.corpo.getBoundingRectangle().height/2);
+	}
 	
+	public Rectangle getRect(){
+    	return contactArea;
+	}
+
+	public void setRect(int cordX, int cordY, int largura, int altura){
+		contactArea.set(cordX, cordY, largura, altura);
+	}
 
 	public float getPosX() {
 		return posX;

@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
+import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
 
 public class Personagem extends Entidade {
@@ -25,10 +26,32 @@ public class Personagem extends Entidade {
 	protected boolean podeAndarEsquerda;
 	protected boolean noAr;
 	protected boolean morreu;
+	protected int tipoInimigo;
 
 	public Personagem(Texture textura, TextureRegion region, float posX, float posY, Vector2 escala, int vida, 
 	int dano, Ataque ataque, float velX, float velY) {
 		super(textura, region, posX, posY, escala);
+		this.ataque = ataque;
+		this.vida = vida;
+		this.dano = dano;
+		this.velX = velX;
+		this.velY = velY;
+		gravidade = 0.3f;
+		posXmegaMan = 0;
+		tomandoDano = false;
+		naPlataforma = false;
+		naParede = false;
+		podeAndarDireita = true;
+		podeAndarEsquerda = true;
+		noAr = true;
+		morreu = false;
+
+		ataquesAtivos = new ArrayList<>();
+	}
+
+	public Personagem( Rectangle rect, float posX, float posY, Vector2 escala, int vida, 
+	int dano, Ataque ataque, float velX, float velY) {
+		super( rect, posX, posY, escala);
 		this.ataque = ataque;
 		this.vida = vida;
 		this.dano = dano;

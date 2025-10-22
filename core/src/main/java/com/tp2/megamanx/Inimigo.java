@@ -15,5 +15,7 @@ public interface Inimigo {
     public void setPosXmegaMan(float posX);
 
     public void tomarDano(int dano);
+
+    public int tipoInimigo();
     
 }
