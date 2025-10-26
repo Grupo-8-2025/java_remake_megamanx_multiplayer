@@ -11,7 +11,6 @@ import com.tp2.megamanx.inimigos.Voador;
 import com.tp2.megamanx.inimigos.Walking;
 import com.tp2.megamanx.inimigos.Spark;
 
-
 import java.util.Random;
 import java.util.ArrayList;
 
@@ -35,7 +34,7 @@ import com.badlogic.gdx.audio.Sound;
 public class Jogo extends Game {
 
     private boolean jogoIniciado = false; 
-    private boolean objetosCriados = false; 
+    //private boolean objetosCriados = false; 
 
     // Texturas das duas fases
     private Texture texturaMegaMan;      
@@ -75,8 +74,13 @@ public class Jogo extends Game {
     private MegaMan megaMan;          
     private MegaMan remoteMegaMan;
     private int vidasMegaMan = 3;     
-    private boolean gameOver = false; 
+    //private boolean gameOver = false; 
     private Pinguim penguin;         
+
+    // Segunda Fase
+    private boolean segundaFaseAtivada = false; 
+    private Vile vile;
+    private Spark spark;
 
     private Sound somMorte, somVitoria, somPadrao; 
     private boolean somPadraoTocando = false;      
@@ -87,16 +91,12 @@ public class Jogo extends Game {
     private NetworkManager networkManager;  // Gerencia a comunicação em rede
     private boolean isServer = false;       // Indica se esta instância é o servidor
     private boolean isMultiplayer = false;  // Indica se o jogo está em modo multiplayer
-
-    // Segunda Fase
-    private boolean segundaFaseAtivada = false; 
-    private Vile vile;
-    private Spark spark;
     
 
     @Override
     public void create() {
         setScreen(new TelaInicial(this)); 
+        criaObjetosJogo();
     }
 
     private void criaObjetosJogo(){
@@ -107,7 +107,6 @@ public class Jogo extends Game {
         viewport = new FillViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()); 
         shapeRenderer = new ShapeRenderer();          
         
-        // Configuração da fonte para exibir textos
         gerador = new FreeTypeFontGenerator(Gdx.files.internal("assets/GAMERIA.ttf")); 
         parametro = new FreeTypeFontGenerator.FreeTypeFontParameter();        
         parametro.size = 24;                         
@@ -149,37 +148,41 @@ public class Jogo extends Game {
     }
 
     private void carregaTexturas(){
-        TipoAtaque.carregarTodasTexturas();       
-                                           
+        TipoAtaque.carregarTodasTexturas();    
+        texturaFundo = new Texture("assets/fundos/cena-de-pixels-graficos-de-8-bits-com-montanhas.jpg"); 
+                                 
         texturaMegaMan = new Texture("assets/imagens/MegaMan/mega_man.png"); 
         texturaVoador = new Texture("assets/imagens/Fase1/bee.png");    
         texturaHogamer = new Texture("assets/imagens/Fase2/hogamer.png");
-        texturaFundo = new Texture("assets/fundos/cena-de-pixels-graficos-de-8-bits-com-montanhas.jpg"); 
 
-        if(!segundaFaseAtivada){
-            texturaPenguin = new Texture("assets/imagens/Fase1/penguin.png");
-            texturaTrower = new Texture("assets/imagens/Fase1/now.png");
-        }  
+        texturaPenguin = new Texture("assets/imagens/Fase1/penguin.png");
+        texturaTrower = new Texture("assets/imagens/Fase1/now.png"); 
+    }
 
-        if(segundaFaseAtivada){
+    private void carregarTexturasFase2(){
+        if (texturaWalking == null) {
             texturaWalking = new Texture("assets/imagens/Fase2/walking.png"); 
+        }
+        if (texturaVile == null) {
             texturaVile = new Texture("assets/imagens/Fase2/vile.png");
+        }
+        if (texturaSpark == null) {
             texturaSpark = new Texture("assets/imagens/Fase2/spark.png");
         }
     }
 
     private void criaPersonagens(boolean segundaFaseAtivada){
         criarInimigos(segundaFaseAtivada);
-        megaMan = new MegaMan(texturaMegaMan, 330, 2517); 
+        megaMan = new MegaMan(texturaMegaMan,  330, 2517); 
         personagens.add(megaMan);      
         
         if(!segundaFaseAtivada){
-            personagens.add(penguin); 
+            if (penguin != null) personagens.add(penguin); 
         }                     
 
         if (segundaFaseAtivada) {
-            personagens.add(vile); 
-            personagens.add(spark);                    
+            if (vile != null) personagens.add(vile); 
+            if (spark != null) personagens.add(spark);                    
         }
     }
 
@@ -273,9 +276,7 @@ public class Jogo extends Game {
         if(!segundaFaseAtivada){
             penguin = new Pinguim(texturaPenguin); 
             inimigos.add(penguin);
-        }
-
-        if (segundaFaseAtivada) {
+        }else if (segundaFaseAtivada) {
             criarVile();
             criarSpark();
         }
@@ -287,7 +288,7 @@ public class Jogo extends Game {
             int indexPosicao = random.nextInt(posicoesValidas.size());
 
             // Garante espaçamento mínimo entre inimigos
-            if(indexPosicaoAnterior == -1 || Math.abs(posicoesValidas.get(indexPosicao).x - posicoesValidas.get(indexPosicaoAnterior).x) > 800){
+            if(indexPosicaoAnterior == -1 || Math.abs(posicoesValidas.get(indexPosicao).x - posicoesValidas.get(indexPosicaoAnterior).x) > 350){
                 int sortearPersonagem = random.nextInt(3);
                 if(sortearPersonagem == 0){
                     if(!segundaFaseAtivada){
@@ -314,25 +315,24 @@ public class Jogo extends Game {
         Random random = new Random();
         for(int i=0; i<3; i++){
             for(Rectangle plataforma : mapa.getChaos()){
-                float posYplataforma = plataforma.y + plataforma.height + 100;
+                float posYplataforma = plataforma.y + plataforma.height + 150;
                 float posXplataforma = random.nextFloat() * ((plataforma.x + plataforma.width) - plataforma.x) + plataforma.x;
                 posicoesValidas.add(new Vector2(posXplataforma, posYplataforma));
             }
         }
-        System.out.println("Posições válidas encontradas: " + posicoesValidas.size());
     }
 
     @Override
     public void render() {
         if (jogoIniciado) {
-            if (objetosCriados == false) {
-                criaObjetosJogo(); 
-                objetosCriados = true; 
+
+            //if (objetosCriados == false) {
+               // criaObjetosJogo(); 
+               // objetosCriados = true; 
                 if (isMultiplayer && remoteMegaMan == null) {
                     remoteMegaMan = new MegaMan(texturaMegaMan, 0, 0); 
                 }
-                
-            }
+           // }
 
             cameraFoco.set(megaMan.getPosX() + megaMan.getCorpo().getBoundingRectangle().width, 
             megaMan.getPosY() + (megaMan.getCorpo().getBoundingRectangle().height/2));
@@ -343,13 +343,12 @@ public class Jogo extends Game {
             Gdx.gl.glClearColor(255f, 255f, 255f, 1);
             Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-            if(!megaMan.isMorreu()){
-                ataquesPersonagens();
+            controleFases();
+
+            if(vidasMegaMan > 0){
                 atualizarPersonagens();
                 colisoes();
             }
-
-            controleFases();
 
             // Envia a posição do jogador local e atualiza a posição do jogador remoto
             if (isMultiplayer && networkManager != null) {
@@ -378,44 +377,68 @@ public class Jogo extends Game {
     }
 
     private void controleFases(){
-        if(penguin.getVida() <= 0){
-            segundaFaseAtivada = true; 
-            Gdx.app.postRunnable(() -> {
-                try {
-                    dispose(); 
-                    jogoIniciado = false; 
-                    objetosCriados = false;
-                    criaObjetosJogo(); 
-                    jogoIniciado = true; 
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
-        } 
+        if(!segundaFaseAtivada){
+            if(penguin != null & penguin.getVida() <= 0){
+                iniciarSegundaFase();
+            }
+        }
         
         if(segundaFaseAtivada){
             if(spark != null){
                 if(spark.getVida() <= 0){
                     somVitoria.play();
                     segundaFaseAtivada = false; 
+                    jogoIniciado = false;
                     setScreen(new TelaVitoria(this));
                 }
             }
         }
-
-        if (megaMan.isMorreu() && !gameOver) {
+        
+        if (megaMan.isMorreu() && vidasMegaMan <= 0) {
             somMorte.play();
-            gameOver = true;
             segundaFaseAtivada = false; 
+            jogoIniciado = false;
             setScreen(new TelaGameOver(this));
+            return;
         }
+
     }
 
+    private void iniciarSegundaFase(){
+        penguin = null;
+        megaMan = null;
+        remoteMegaMan = null;
+
+        
+        segundaFaseAtivada = true;
+
+        carregarTexturasFase2();
+
+        inimigos.clear();
+        personagens.clear();
+
+        criaPersonagens(segundaFaseAtivada);
+     }
+
     private void atualizarPersonagens(){
+        ataquesPersonagens();
+
         megaMan.confereMortePorQueda(); 
 
+        if(megaMan.isMorreu() && vidasMegaMan > 0){
+            vidasMegaMan--;
+            megaMan.setVida(16);
+            megaMan.setPosicao(330, 2517);
+            megaMan.setMorreu(false);
+            criarInimigos(segundaFaseAtivada);
+        }
+
+        if(vidasMegaMan <= 0){
+            megaMan.setMorreu(true);
+        }
+
         if(!segundaFaseAtivada){
-            penguin.atualizar();
+            if (penguin != null) penguin.atualizar();
         } 
 
         if (segundaFaseAtivada) {
@@ -526,14 +549,14 @@ public class Jogo extends Game {
         float vidaMaxBoss = 0;
         float vidaAtualBoss = 0;
 
-        if(!segundaFaseAtivada){
+        if(!segundaFaseAtivada && (penguin != null)){
             distancia = megaMan.getCorpo().getBoundingRectangle().getCenter(new Vector2()).dst(
                 penguin.getCorpo().getBoundingRectangle().getCenter(new Vector2())
             ); 
             vidaMaxBoss = 32f;
             vidaAtualBoss = penguin.getVida();
         }
-        else if(segundaFaseAtivada){
+        else if(segundaFaseAtivada && (spark != null)){
             distancia = megaMan.getCorpo().getBoundingRectangle().getCenter(new Vector2()).dst(
                 spark.getCorpo().getBoundingRectangle().getCenter(new Vector2())
             ); 
@@ -571,13 +594,12 @@ public class Jogo extends Game {
         batch.begin();
         desenharEntidades(); 
        
-        // Exibe informações de vida no topo da tela
         fonteVida.draw(batch, "Vida MegaMan: " + megaMan.getVida(), camera.position.x - camera.viewportWidth / 2 + 20, camera.position.y + camera.viewportHeight / 2 - 20);
         
-        if(!segundaFaseAtivada){
+        if(!segundaFaseAtivada && (penguin != null)){
             fonteVida.draw(batch, "Vida Penguin: " + penguin.getVida(), camera.position.x - camera.viewportWidth / 2 + 20, camera.position.y + camera.viewportHeight / 2 - 50);
         }
-        else if(segundaFaseAtivada){
+        else if(segundaFaseAtivada && (spark != null)){
             fonteVida.draw(batch, "Vida Spark: " + spark.getVida(), camera.position.x - camera.viewportWidth / 2 + 20, camera.position.y + camera.viewportHeight / 2 - 50);
         }
         
@@ -592,6 +614,7 @@ public class Jogo extends Game {
 
     private void desenharEntidades(){
         desenharAtaques(); 
+
         personagens.reset();
         while (personagens.hasNext()) {
             Personagem personagem = personagens.next();
@@ -646,9 +669,10 @@ public class Jogo extends Game {
 
     public void reset(){
         vidasMegaMan = 3;
-        gameOver = false;
+        segundaFaseAtivada = false;
         dispose();
-        create();
+        //create();
+        criaObjetosJogo();
     }
 
     public void updateRemotePlayer(PlayerPosition pos) {

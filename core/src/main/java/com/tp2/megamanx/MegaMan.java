@@ -26,7 +26,8 @@ public class MegaMan extends Personagem {
     private boolean colidiuInimigo;                 
     private boolean jaTomouDano;                    
     private boolean tomandoDano;                   
-    private boolean ganhouJogo;                     
+    private boolean ganhouJogo;      
+    private boolean podeVoltarInicio;               
 
     public MegaMan(Texture textura, float posX, float posY) {
 
@@ -46,6 +47,7 @@ public class MegaMan extends Personagem {
         jaTomouDano = false;
         tomandoDano = false;
         ganhouJogo = false;
+        podeVoltarInicio = false;
         paraDireita = true;
         criarAtaques(); 
     }
@@ -317,15 +319,29 @@ public class MegaMan extends Personagem {
         }
     }
 
+    public void setMorreu(boolean morreu){
+        this.morreu = morreu;
+    }
+
+    public boolean isPodeVoltarInicio() {
+        return podeVoltarInicio;
+    }
+
+    public void setPodeVoltarInicio(boolean podeVoltarInicio) {
+        this.podeVoltarInicio = podeVoltarInicio;
+    }
+
     @Override
     public void morrer(){
         if(vida <= 0){
             morreu = true;
+            /* 
             iterarDeltaTime();
             setRegion(2398, 0, 35, 50);
             if (deltaTime >= 5.0f) {
-                setPosicao(0, 0);
+                setPodeVoltarInicio(true);
             }
+            */
         }
     }
 

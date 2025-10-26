@@ -44,7 +44,7 @@ public class TelaInicial implements Screen {
         font.setColor(Color.SKY);
 
         font.draw(spriteBatch, "MEGA MAN X", 10, worldHeight - 300);
-        font.draw(spriteBatch, "APERTE ENTER PARA COMECAR", 10, worldHeight - 320);
+        font.draw(spriteBatch, "Aperte ENTER para começar", 10, worldHeight - 320);
         font.draw(spriteBatch, "Digite seu nome:", 10, worldHeight - 350);
         font.draw(spriteBatch, nomeJogador + (digitandoNome ? "|" : ""), 10, worldHeight - 370);
     }
@@ -59,25 +59,19 @@ public class TelaInicial implements Screen {
 
     public void verificaSelecaoModo() {
         if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.NUM_1)) {
-            jogo.setIsMultiplayer(false);
-            digitandoNome = false; // Sai da tela inicial
-            modoSelecionado = true;
-            jogo.setJogoIniciado(true);
+            iniciarJogo();
         } else if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.NUM_2)) {
-            System.out.println("Apertou 2");
-            jogo.setIsMultiplayer(true);
-            jogo.setIsServer(true);
-            digitandoNome = false; // Sai da tela inicial
-            modoSelecionado = true;
-            jogo.setJogoIniciado(true);
+            iniciarJogo();
         } else if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.NUM_3)) {
-            jogo.setIsMultiplayer(true);
-            jogo.setIsServer(false);
-            digitandoNome = false; // Sai da tela inicial
-            modoSelecionado = true;
-            jogo.setJogoIniciado(true);
+            iniciarJogo();
         }
-        
+    }
+
+    private void iniciarJogo(){
+        jogo.setIsMultiplayer(false);
+        digitandoNome = false; 
+        modoSelecionado = true;
+        jogo.setJogoIniciado(true);
     }
 
     @Override
@@ -124,7 +118,6 @@ public class TelaInicial implements Screen {
             if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.ENTER) && nomeJogador.length() > 0) {
                 digitandoNome = false;
             }
-
         }
     }
 

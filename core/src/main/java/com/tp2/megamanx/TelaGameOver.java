@@ -54,13 +54,16 @@ public class TelaGameOver implements Screen {
         botaoInicio.desenhar(shapeRenderer, batch, font);
 
         if (botaoJogarNovamente.foiClicado()) {
-            jogo.reset(); // Reinicia o jogo
-            jogo.setScreen(null); // Volta para o jogo
+            jogo.reset();
+            jogo.setSegundaFaseAtivada(false);
+            jogo.setJogoIniciado(true);
+            jogo.setScreen(null);
         }
 
         if (botaoInicio.foiClicado()) {
-            jogo.reset(); // Reinicia o jogo
-            jogo.setScreen(new TelaInicial(jogo)); // Vai para tela inicial
+            jogo.reset(); 
+            jogo.setSegundaFaseAtivada(false);
+            jogo.setScreen(new TelaInicial(jogo));
         }
 
     }
