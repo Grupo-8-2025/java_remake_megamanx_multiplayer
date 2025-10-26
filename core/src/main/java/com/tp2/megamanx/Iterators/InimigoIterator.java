@@ -116,6 +116,10 @@ public class InimigoIterator implements Iterator<Inimigo> {
         this.colecao = colecao;
     }
 
+    public void clear(){
+        colecao.limpar();
+    }
+
     /**
      * Pula para o próximo elemento sem retorná-lo
      * Incrementa o índice atual se ainda há elementos disponíveis

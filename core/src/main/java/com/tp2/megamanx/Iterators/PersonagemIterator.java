@@ -76,6 +76,10 @@ public class PersonagemIterator implements Iterator<Personagem> {
     public void reset() {
         indexAtual = 0;  // Retorna o índice para a primeira posição
     }
+
+    public void clear(){
+        colecao.limpar();
+    }
     
     /**
      * Retorna o índice atual do iterator
