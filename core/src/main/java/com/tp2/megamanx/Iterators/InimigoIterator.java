@@ -1,7 +1,6 @@
 package com.tp2.megamanx.Iterators;
 
-// Importa a classe Inimigo para trabalhar com objetos do tipo Inimigo
-import com.tp2.megamanx.Inimigo;
+import com.tp2.megamanx.inimigos.Inimigo;
 
 /**
  * Classe InimigoIterator implementa o padrão Iterator para percorrer uma coleção de inimigos
@@ -115,6 +114,10 @@ public class InimigoIterator implements Iterator<Inimigo> {
      */
     public void setColecao(InimigoCollection colecao) {
         this.colecao = colecao;
+    }
+
+    public void clear(){
+        colecao.limpar();
     }
 
     /**
