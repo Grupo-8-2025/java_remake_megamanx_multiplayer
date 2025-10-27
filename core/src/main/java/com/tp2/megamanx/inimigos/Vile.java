@@ -13,7 +13,7 @@ public class Vile extends Boss {
     public Vile(Texture textura, Ataque ataque) {
         
         super(textura, new TextureRegion(textura, 0, 0, 33, 45), 
-        new Vector2(0.5f, 2.0f), 300, 500, 20, 5, ataque);
+        new Vector2(0.5f, 2.0f), 300, 500, 20, 3, ataque);
 
         ataquesAtivos = new ArrayList<>();
     }
@@ -27,6 +27,9 @@ public class Vile extends Boss {
             int acaoAnterior = determinaAcao;
             iterarDeltaTime(); 
             atualizarAcao(); 
+
+            tomandoDanoPorAtaque(1, 43, 731, 19, 43, 41, 
+            0, 24, 43, 36); 
             
             if(!noAr){
                 if(determinaAcao != acaoAnterior){
@@ -43,7 +46,7 @@ public class Vile extends Boss {
     }
 
     private void determinarAcaoAtaque(){
-        duracaoAcao = 3f;
+        duracaoAcao = 2f;
         podeAtacar = true;
         podeMover = false;
     }
@@ -73,7 +76,7 @@ public class Vile extends Boss {
             setRegion(53, 0, 53, 45); // Frame de ataque
 
             float posXataque = 0;
-            float posYataque = corpo.getY() + 15f;
+            float posYataque = corpo.getY() + 10f;
 
             int velocidadeAtaque = 0;
             if(posMegaMan.x > posX){
@@ -89,10 +92,10 @@ public class Vile extends Boss {
             Ataque novoAtaque = new Ataque(
                 new TextureRegion(
                     ataqueAtual.getTipo().getTextura(),
-                    ataqueAtual.getTipo().getCordX1(), ataqueAtual.getTipo().getCordY1(),
-                    ataqueAtual.getTipo().getLargura1(), ataqueAtual.getTipo().getAltura1()),
+                    ataqueAtual.getTipo().getCordX(), ataqueAtual.getTipo().getCordY(),
+                    ataqueAtual.getTipo().getLargura(), ataqueAtual.getTipo().getAltura()),
                 new Vector2(1f, 2.5f), posXataque, posYataque, 
-                ataqueAtual.getTipo(), velocidadeAtaque
+                ataqueAtual.getTipo(), velocidadeAtaque, paraDireita
             );
 
             novoAtaque.setColidiu(false);

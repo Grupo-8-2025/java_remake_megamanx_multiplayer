@@ -11,19 +11,22 @@ public class Spark extends Boss {
     public Spark(Texture textura, Ataque ataque) {
         
         super(textura, new TextureRegion(textura, 0, 0, 56, 64), 
-        new Vector2(0.5f, 2.0f), 11635, 3000, 40, 6, ataque);
+        new Vector2(0.2f, 2.0f), 11635, 3000, 40, 6, ataque);
 
     }
 
     public void atualizar(){
         if(!morreu && Math.abs(posMegaMan.x - posX) < 600){
-            sofrerGravidade(posY, 1, 0, 302, 0, 58, 64, 0, 0, 56, 64); 
+            sofrerGravidade(posY, 1, 0, 0, 0, 56, 64, 0, 0, 56, 64); 
 
-            delimitarMovimento(185, 630); 
+            delimitarMovimento(10600, 11855); 
 
             int acaoAnterior = determinaAcao;
             iterarDeltaTime(); 
             atualizarAcao(); 
+
+            tomandoDanoPorAtaque(3, 56, 0, 0, 56, 64, 
+            0, 0, 56, 64); 
             
             if(!noAr){
                 if(determinaAcao != acaoAnterior){
@@ -36,11 +39,12 @@ public class Spark extends Boss {
                     } 
                 }
             }
+
         }
     }
 
     private void determinarAcaoAtaque(){
-        duracaoAcao = 3f;
+        duracaoAcao = 2f;
         podeAtacar = true;
         podeMover = false;
     }
@@ -61,16 +65,16 @@ public class Spark extends Boss {
             }
             setRegion(0, 0, 56, 64); 
         }
-        parado(3, 56, 0, 0, 64, 56);
+        parado(3, 56, 0, 0, 56, 64);
     }
 
     @Override
     public void atacar(){
         if(podeAtacar &&  deltaTime <= 0f && !tomandoDano){
-            animar(2, 63, 168, 0, 64, 63);
+            animar(2, 63, 168, 0, 63, 64);
 
             float posXataque = 0;
-            float posYataque = corpo.getY() + 15f;
+            float posYataque = corpo.getY() + 10f;
 
             int velocidadeAtaque = 0;
             if(posMegaMan.x > posX){
@@ -86,10 +90,10 @@ public class Spark extends Boss {
             Ataque novoAtaque = new Ataque(
                 new TextureRegion(
                     ataqueAtual.getTipo().getTextura(),
-                    ataqueAtual.getTipo().getCordX1(), ataqueAtual.getTipo().getCordY1(),
-                    ataqueAtual.getTipo().getLargura1(), ataqueAtual.getTipo().getAltura1()),
+                    ataqueAtual.getTipo().getCordX(), ataqueAtual.getTipo().getCordY(),
+                    ataqueAtual.getTipo().getLargura(), ataqueAtual.getTipo().getAltura()),
                 new Vector2(1f, 2.5f), posXataque, posYataque, 
-                ataqueAtual.getTipo(), velocidadeAtaque
+                ataqueAtual.getTipo(), velocidadeAtaque, paraDireita
             );
 
             novoAtaque.setColidiu(false);

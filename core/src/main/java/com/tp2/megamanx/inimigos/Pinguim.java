@@ -17,7 +17,7 @@ public class Pinguim extends Boss {
     public Pinguim(Texture textura) {
         
         super(textura, new TextureRegion(textura, 602, 16, 43, 44), 
-        new Vector2(0.1f, 2.0f), 11635, 3000, 32, 4);    
+        new Vector2(0.1f, 2.0f), 11635, 3000, 32, 5);    
         
         criarAtaques(); 
     }
@@ -30,12 +30,12 @@ public class Pinguim extends Boss {
             new Ataque(
                 new TextureRegion(
                     TipoAtaque.BOLA_GELO.getTextura(),  
-                    TipoAtaque.BOLA_GELO.getCordX1(), 
-                    TipoAtaque.BOLA_GELO.getCordY1(),
-                    TipoAtaque.BOLA_GELO.getLargura1(), 
-                    TipoAtaque.BOLA_GELO.getAltura1()), 
+                    TipoAtaque.BOLA_GELO.getCordX(), 
+                    TipoAtaque.BOLA_GELO.getCordY(),
+                    TipoAtaque.BOLA_GELO.getLargura(), 
+                    TipoAtaque.BOLA_GELO.getAltura()), 
                 new Vector2(0.5f, 1.5f), -100, -100, 
-                TipoAtaque.BOLA_GELO, 0
+                TipoAtaque.BOLA_GELO, 0, paraDireita
             )
         );
 
@@ -43,38 +43,24 @@ public class Pinguim extends Boss {
             new Ataque(
                 new TextureRegion(
                     TipoAtaque.SOPRO_GELO.getTextura(),  
-                    TipoAtaque.SOPRO_GELO.getCordX1(), 
-                    TipoAtaque.SOPRO_GELO.getCordY1(),
-                    TipoAtaque.SOPRO_GELO.getLargura1(), 
-                    TipoAtaque.SOPRO_GELO.getAltura1()), 
+                    TipoAtaque.SOPRO_GELO.getCordX(), 
+                    TipoAtaque.SOPRO_GELO.getCordY(),
+                    TipoAtaque.SOPRO_GELO.getLargura(), 
+                    TipoAtaque.SOPRO_GELO.getAltura()), 
                 new Vector2(0.5f, 1.5f), -100, -100, 
-                TipoAtaque.SOPRO_GELO, 0
+                TipoAtaque.SOPRO_GELO, 0, paraDireita
             )
         );
 
         ataqueAtual = tiposAtaque.get(0); // Ataque inicial
     }
 
-    /* 
-    @Override
-    protected void setRegion(int cordX, int cordY, int largura, int altura) {
-        region.setRegion(cordX, cordY, largura, altura);
-
-        boolean flipou = region.isFlipX();
-        if(paraDireita != flipou) {
-            region.flip(true, false);
-        }
-
-        corpo.setRegion(region);
-    }
-    */
-
     public void atualizar(){
         if(!morreu && Math.abs(posMegaMan.x - posX) < 600){
             sofrerGravidade(posY, 1, 0, 602, 16, 43, 
             44, 0, 24, 43, 36); 
 
-            delimitarMovimento(8050, 8670); 
+            delimitarMovimento(10600, 11855); 
 
             int acaoAnterior = determinaAcao;
             iterarDeltaTime(); 
@@ -101,7 +87,7 @@ public class Pinguim extends Boss {
     }
 
     private void determinarAtaqueBolaGelo(){
-        duracaoAcao = 3.f;
+        duracaoAcao = 2f;
         indexAtaqueAtual = 0;
         ataqueAtual = tiposAtaque.get(indexAtaqueAtual);
         podeAtacar = true;
@@ -109,7 +95,7 @@ public class Pinguim extends Boss {
     }
 
     private void determinarAtaqueSoproGelo(){
-        duracaoAcao = 3f;
+        duracaoAcao = 2f;
         indexAtaqueAtual = 1;
         ataqueAtual = tiposAtaque.get(indexAtaqueAtual);
         podeAtacar = true;
@@ -120,8 +106,10 @@ public class Pinguim extends Boss {
     public void mover() {
         if (podeMover) {
             if (posMegaMan.x < posX) {
+                paraDireita = false;
                 moverParaEsquerda(1, 43, 301, 31, 43, 29);
             } else if (posMegaMan.x > posX) {
+                paraDireita = true;
                 moverParaDireita(1, 43, 301, 31, 43, 29);
             }
         } else {
@@ -140,7 +128,7 @@ public class Pinguim extends Boss {
             setRegion(688, 25, 43, 35); // Frame de ataque
 
             float posXataque = 0;
-            float posYataque = corpo.getY() + 15f;
+            float posYataque = corpo.getY() + 10f;
 
             int velocidadeAtaque = 0;
             if(posMegaMan.x > posX){
@@ -156,10 +144,10 @@ public class Pinguim extends Boss {
             Ataque novoAtaque = new Ataque(
                 new TextureRegion(
                     ataqueAtual.getTipo().getTextura(),
-                    ataqueAtual.getTipo().getCordX1(), ataqueAtual.getTipo().getCordY1(),
-                    ataqueAtual.getTipo().getLargura1(), ataqueAtual.getTipo().getAltura1()),
+                    ataqueAtual.getTipo().getCordX(), ataqueAtual.getTipo().getCordY(),
+                    ataqueAtual.getTipo().getLargura(), ataqueAtual.getTipo().getAltura()),
                 new Vector2(1f, 2.5f), posXataque, posYataque, 
-                ataqueAtual.getTipo(), velocidadeAtaque
+                ataqueAtual.getTipo(), velocidadeAtaque, paraDireita
             );
 
             novoAtaque.setColidiu(false);

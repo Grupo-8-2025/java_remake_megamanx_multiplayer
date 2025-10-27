@@ -47,6 +47,7 @@ public class Boss extends Personagem implements Inimigo {
         paraDireita = false;
     }
 
+
     public Rectangle getRect(){
         return corpo.getBoundingRectangle();
     }
@@ -71,13 +72,13 @@ public class Boss extends Personagem implements Inimigo {
 
 
     protected void determinarAcaoMover(){
-        duracaoAcao = 3.f;
+        duracaoAcao = 3.0f;
         podeMover = true;
         podeAtacar = false;
     }
 
     protected void determinarAcaoParado(){
-        duracaoAcao = 2f;
+        duracaoAcao = 1.0f;
         podeAtacar = false;
         podeMover = false;
     }
@@ -85,8 +86,10 @@ public class Boss extends Personagem implements Inimigo {
     protected void delimitarMovimento(float posXlimite1, float posXlimite2){
         if(posX <= posXlimite1){
             paraDireita = true;
+            podeMover = false;
         } else if(posX >= posXlimite2){
             paraDireita = false;
+            podeMover = false;
         }
     }
 
@@ -98,17 +101,21 @@ public class Boss extends Personagem implements Inimigo {
     }
 
     protected void moverParaDireita(int qtdFrames, int incrementa, int cordX, int cordY, int largura, int altura) {
-        paraDireita = true;
-        velX = 5;
-        setPosicao(posX + velX, posY);
-        animar(posX, qtdFrames, incrementa, cordX, cordY, largura, altura);
+        if(podeAndarDireita){
+            paraDireita = true;
+            velX = 5;
+            setPosicao(posX + velX, posY);
+            animar(posX, qtdFrames, incrementa, cordX, cordY, largura, altura);
+        }
     }
 
     protected void moverParaEsquerda(int qtdFrames, int incrementa, int cordX, int cordY, int largura, int altura) {
-        paraDireita = false;
-        velX = -5;
-        setPosicao(posX + velX, posY);
-        animar(posX, qtdFrames, incrementa, cordX, cordY, largura, altura);
+        if(podeAndarEsquerda){
+            paraDireita = false;
+            velX = -5;
+            setPosicao(posX + velX, posY);
+            animar(posX, qtdFrames, incrementa, cordX, cordY, largura, altura);
+        }
     }
 
     protected void parado(int qtdFrames, int incrementa, int cordX, int cordY, int largura, int altura){
