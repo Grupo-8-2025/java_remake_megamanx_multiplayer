@@ -7,7 +7,7 @@ import com.tp2.megamanx.inimigos.Inimigo;
  * Permite navegar através de uma coleção de objetos Inimigo de forma sequencial
  * Implementa a interface Iterator<Inimigo> para fornecer métodos padrão de iteração
  */
-public class InimigoIterator implements Iterator<Inimigo> {
+public class InimigoIterator implements Iterator<Inimigo>, java.io.Serializable {
 
     // Atributos da classe
     private InimigoCollection colecao;  // Referência para a coleção de inimigos que será iterada

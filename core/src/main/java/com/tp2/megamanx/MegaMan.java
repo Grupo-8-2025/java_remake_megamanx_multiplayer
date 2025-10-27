@@ -156,7 +156,7 @@ public class MegaMan extends Personagem {
         }
         tomandoDanoPorAtaque(3, 32, 2302, 0, 32, 50, 0, 16, 34, 34);
 
-        System.err.println(posX + ", " + posY);
+        //System.err.println(posX + ", " + posY);
     }
 
     private void paradoAtirando(){
