@@ -13,6 +13,10 @@ import com.tp2.megamanx.inimigos.Spark;
 
 import java.util.Random;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
@@ -30,11 +34,13 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.audio.Sound;
+import com.tp2.megamanx.Ataque;
+import java.util.Iterator;
 
 public class Jogo extends Game {
 
     private boolean jogoIniciado = false; 
-    //private boolean objetosCriados = false; 
+    private boolean objetosCriados = false; // nova flag para evitar criação duplicada
 
     // Texturas das duas fases
     private Texture texturaMegaMan;      
@@ -65,17 +71,17 @@ public class Jogo extends Game {
     private ArrayList<Vector2> posicoesValidas;   
     private Random random;                        
 
-    private Mapa mapa;                           
+    private Mapa mapa, mapaSegundaFase;                           
 
     private GerenciadorColisoes gerenciadorColisoes; 
-    private InimigoIterator inimigos;                 
+    public InimigoIterator inimigos;                 
     private PersonagemIterator personagens;          
 
     private MegaMan megaMan;          
     private MegaMan remoteMegaMan;
     private int vidasMegaMan = 3;     
     //private boolean gameOver = false; 
-    private Pinguim penguin;         
+    public Pinguim penguin;         
 
     // Segunda Fase
     private boolean segundaFaseAtivada = false; 
@@ -89,14 +95,34 @@ public class Jogo extends Game {
 
     // Gerenciamento de rede
     private NetworkManager networkManager;  // Gerencia a comunicação em rede
-    private boolean isServer = false;       // Indica se esta instância é o servidor
+    public boolean isServer = true;       // Indica se esta instância é o servidor
     private boolean isMultiplayer = false;  // Indica se o jogo está em modo multiplayer
+    private Texture texturaMegaMan2;
+    public InimigoIterator remoteInimigos;
+    private PersonagemIterator remotePersonagens;
     
+    // NEW: map para relacionar id (do servidor) -> inimigo local placeholder
+    private Map<Integer, Inimigo> remoteEnemyMap = new HashMap<>();
+    // NEW: vida conhecida anteriormente para detectar diminuições locais
+    private Map<Integer, Integer> remoteEnemyLastVida = new HashMap<>();
+
+    // NEW: conjunto de placeholders remotos (clientes) para que não rodem AI local
+    private Set<Inimigo> remotePlaceholders = new HashSet<>();
 
     @Override
     public void create() {
-        setScreen(new TelaInicial(this)); 
+        // apenas mostra a tela inicial; não cria objetos do jogo aqui
+        setScreen(new TelaInicial(this));
+        // criaObjetosJogo(); <- removido para aguardar callback da TelaInicial
+    }
+
+    // método público que a TelaInicial deve chamar quando terminar (todos os botões clicados)
+    public void iniciarJogo() {
+        if (objetosCriados) return; // já criado
+        objetosCriados = true;
         criaObjetosJogo();
+        // marca o jogo como iniciado para que o loop de render comece a atualizar/desenhar
+        setJogoIniciado(true);
     }
 
     private void criaObjetosJogo(){
@@ -125,26 +151,34 @@ public class Jogo extends Game {
         inimigos = new InimigoIterator();                
         personagens = new PersonagemIterator();           
 
+        if (isMultiplayer && networkManager == null && isServer) {
+            iniciaMultiplayer(); // Inicializa o modo multiplayer se ativado
+        }
+
         carregaTexturas();  
         criaMapa();         
         criaPersonagens(segundaFaseAtivada);  
 
         somPadrao.play(somPadrao.loop()); // Inicia a música de fundo em loop
         somPadraoTocando = true;
-        if (isMultiplayer && networkManager == null) {
+        if (isMultiplayer && networkManager == null && !isServer) {
             iniciaMultiplayer(); // Inicializa o modo multiplayer se ativado
         }
     }
 
     private void iniciaMultiplayer() {
-        if (isMultiplayer) {
-            System.out.println(isServer);
-            networkManager = new NetworkManager(this, isServer); // Inicializa o gerenciador de rede
+        if (!isMultiplayer) return;
+        // Se já existe, descarte para recriar com a flag atual de isServer
+        if (networkManager != null) {
+            networkManager.dispose();
         }
+        System.out.println("iniciaMultiplayer: isServer=" + isServer);
+        networkManager = new NetworkManager(this, isServer); // Inicializa/recria o gerenciador de rede
     }
 
     private void criaMapa(){
         mapa = new Mapa("assets/maps/Mapa.tmx", 800, 600);
+        mapaSegundaFase = new Mapa("assets/maps/MapaSegundaFase.tmx", 800, 600);
     }
 
     private void carregaTexturas(){
@@ -157,6 +191,8 @@ public class Jogo extends Game {
 
         texturaPenguin = new Texture("assets/imagens/Fase1/penguin.png");
         texturaTrower = new Texture("assets/imagens/Fase1/now.png"); 
+
+        texturaMegaMan2 = new Texture("assets/imagens/MegaMan/mega_man_green.png");
     }
 
     private void carregarTexturasFase2(){
@@ -172,8 +208,14 @@ public class Jogo extends Game {
     }
 
     private void criaPersonagens(boolean segundaFaseAtivada){
+
         criarInimigos(segundaFaseAtivada);
-        megaMan = new MegaMan(texturaMegaMan,  330, 2517); 
+
+        if(isMultiplayer && !isServer){
+            megaMan = new MegaMan(texturaMegaMan2,  330, 2517);
+        }else{
+            megaMan = new MegaMan(texturaMegaMan,  330, 2517); 
+        }
         personagens.add(megaMan);      
         
         if(!segundaFaseAtivada){
@@ -273,66 +315,89 @@ public class Jogo extends Game {
     }
 
     private void criarInimigos(boolean segundaFaseAtivada){
-        if(!segundaFaseAtivada){
-            penguin = new Pinguim(texturaPenguin); 
-            inimigos.add(penguin);
-        }else if (segundaFaseAtivada) {
-            criarVile();
-            criarSpark();
-        }
-            
-        determinarPosicoesValidas(); 
-
-        int indexPosicaoAnterior = -1;
-        for(int i=0; i<20; i++){
-            int indexPosicao = random.nextInt(posicoesValidas.size());
-
-            // Garante espaçamento mínimo entre inimigos
-            if(indexPosicaoAnterior == -1 || Math.abs(posicoesValidas.get(indexPosicao).x - posicoesValidas.get(indexPosicaoAnterior).x) > 350){
-                int sortearPersonagem = random.nextInt(3);
-                if(sortearPersonagem == 0){
-                    if(!segundaFaseAtivada){
-                        criarTrower(indexPosicao);
-                    }
-                    if(segundaFaseAtivada){
-                        criarWalking(indexPosicao);
-                    }
-                }
-                if(sortearPersonagem == 1){
-                    criarVoador(indexPosicao);
-                }
-                if(sortearPersonagem == 2){
-                    criarHogamer(indexPosicao);
-                }
+        if (isServer) {
+            if(!segundaFaseAtivada){
+                penguin = new Pinguim(texturaPenguin); 
+                inimigos.add(penguin);
+            }else if (segundaFaseAtivada) {
+                criarVile();
+                criarSpark();
             }
-            indexPosicaoAnterior = indexPosicao;
+                
+            determinarPosicoesValidas(); 
+
+            int indexPosicaoAnterior = -1;
+            for(int i=0; i<15; i++){
+                int indexPosicao = random.nextInt(posicoesValidas.size());
+
+                // Garante espaçamento mínimo entre inimigos
+                if(indexPosicaoAnterior == -1 || Math.abs(posicoesValidas.get(indexPosicao).x - posicoesValidas.get(indexPosicaoAnterior).x) > 350){
+                    int sortearPersonagem = random.nextInt(3);
+                    if(sortearPersonagem == 0){
+                        if(!segundaFaseAtivada){
+                            criarTrower(indexPosicao);
+                        }
+                        if(segundaFaseAtivada){
+                            criarWalking(indexPosicao);
+                        }
+                    }
+                    if(sortearPersonagem == 1){
+                        criarVoador(indexPosicao);
+                    }
+                    if(sortearPersonagem == 2){
+                        criarHogamer(indexPosicao);
+                    }
+                }
+                indexPosicaoAnterior = indexPosicao;
+            }
+            networkManager.sendInimigos(inimigos);
+            networkManager.sendPinguin(penguin);
         }
-        
     }
 
     private void determinarPosicoesValidas(){
-        posicoesValidas.clear();
-        Random random = new Random();
-        for(int i=0; i<10; i++){
-            for(Rectangle plataforma : mapa.getChaos()){
-                float posYplataforma = plataforma.y + plataforma.height + 150;
-                float posXplataforma = random.nextFloat() * ((plataforma.x + plataforma.width) - plataforma.x) + plataforma.x;
-                posicoesValidas.add(new Vector2(posXplataforma, posYplataforma));
+        if (!segundaFaseAtivada) {
+            posicoesValidas.clear();
+            Random random = new Random();
+            for(int i=0; i<10; i++){
+                for(Rectangle plataforma : mapa.getChaos()){
+                    float posYplataforma = plataforma.y + plataforma.height + 150;
+                    float posXplataforma = random.nextFloat() * ((plataforma.x + plataforma.width) - plataforma.x) + plataforma.x;
+                    posicoesValidas.add(new Vector2(posXplataforma, posYplataforma));
+                }
+            }
+        }else{
+            posicoesValidas.clear();
+            Random random = new Random();
+            for(int i=0; i<10; i++){
+                for(Rectangle plataforma : mapaSegundaFase.getChaos()){
+                    float posYplataforma = plataforma.y + plataforma.height + 150;
+                    float posXplataforma = random.nextFloat() * ((plataforma.x + plataforma.width) - plataforma.x) + plataforma.x;
+                    posicoesValidas.add(new Vector2(posXplataforma, posYplataforma));
+                }
             }
         }
+        
     }
 
     @Override
     public void render() {
         if (jogoIniciado) {
-
-            //if (objetosCriados == false) {
-               // criaObjetosJogo(); 
-               // objetosCriados = true; 
-                if (isMultiplayer && remoteMegaMan == null) {
+            // Se a tela inicial marcou o jogo como iniciado mas os objetos ainda não foram criados,
+            // cria-os agora para evitar NullPointerException (texturas/objetos nulos).
+            if (!objetosCriados) {
+                objetosCriados = true;
+                criaObjetosJogo();
+            }
+            
+            if (isMultiplayer && remoteMegaMan == null) {
+                if (isServer) {
+                    remoteMegaMan = new MegaMan(texturaMegaMan2, 0, 0);
+                }else{
                     remoteMegaMan = new MegaMan(texturaMegaMan, 0, 0); 
                 }
-           // }
+            }
+
 
             cameraFoco.set(megaMan.getPosX() + megaMan.getCorpo().getBoundingRectangle().width, 
             megaMan.getPosY() + (megaMan.getCorpo().getBoundingRectangle().height/2));
@@ -347,7 +412,90 @@ public class Jogo extends Game {
 
             if(vidasMegaMan > 0){
                 atualizarPersonagens();
+                networkManager.sendInimigos(inimigos);
+                //networkManager.sendPinguin(penguin);
                 colisoes();
+
+                // NEW: no cliente, detecta colisões entre ataques locais do jogador e os placeholders
+                // e envia um EnemyHit para o servidor solicitando que ele chame tomarDano(...) no inimigo autoritativo.
+                if (isMultiplayer && !isServer && networkManager != null && megaMan != null) {
+                    try {
+                        // colete ataques e envie hits para inimigos atingidos; remover ataques que acertarem
+                        ArrayList<Ataque> ataques = megaMan.getAtaquesAtivos();
+                        // protegemos contra concorrência e modificações durante iteração
+                        ArrayList<Ataque> ataquesParaRemover = new ArrayList<>();
+                        for (Map.Entry<Integer, Inimigo> e : remoteEnemyMap.entrySet()) {
+                            int enemyId = e.getKey();
+                            Inimigo inimigoLocal = e.getValue();
+                            if (inimigoLocal == null) continue;
+                            Rectangle rectInimigo;
+                            try {
+                                rectInimigo = inimigoLocal.getRect();
+                            } catch (Throwable t) {
+                                continue;
+                            }
+                            if (rectInimigo == null) continue;
+
+                            // checa cada ataque do jogador
+                            for (Ataque a : ataques) {
+                                if (a == null) continue;
+                                try {
+                                    // tenta obter bounding rectangle do ataque — método pode variar, usamos try/catch
+                                    Rectangle rectAtaque = null;
+                                    try {
+                                        // tentativa comum: Ataque.getRect() ou getCorpo().getBoundingRectangle()
+                                        java.lang.reflect.Method mRect = null;
+                                        try {
+                                            mRect = a.getClass().getMethod("getRect");
+                                        } catch (NoSuchMethodException ignore) {
+                                            // tentar getCorpo().getBoundingRectangle via reflexão
+                                            try {
+                                                Object corpo = a.getClass().getMethod("getCorpo").invoke(a);
+                                                if (corpo != null) {
+                                                    try {
+                                                        rectAtaque = (Rectangle) corpo.getClass().getMethod("getBoundingRectangle").invoke(corpo);
+                                                    } catch (Throwable ignored) {}
+                                                }
+                                            } catch (Throwable ignored) {}
+                                        }
+                                        if (mRect != null) {
+                                            Object r = mRect.invoke(a);
+                                            if (r instanceof Rectangle) rectAtaque = (Rectangle) r;
+                                        }
+                                    } catch (Throwable ignore) {}
+
+                                    if (rectAtaque == null) continue;
+                                    if (rectAtaque.overlaps(rectInimigo)) {
+                                        // damage: tentar obter método getDano() em Ataque, senão usar 1
+                                        int damage = 1;
+                                        try {
+                                            java.lang.reflect.Method mDano = a.getClass().getMethod("getDano");
+                                            Object d = mDano.invoke(a);
+                                            if (d instanceof Number) damage = ((Number) d).intValue();
+                                        } catch (Throwable ignored) {}
+
+                                        // envia hit para o servidor (o servidor chamará inimigo.tomarDano)
+                                        networkManager.sendEnemyHit(enemyId, damage);
+
+                                        // marca ataque para remoção local (visual)
+                                        ataquesParaRemover.add(a);
+                                        break; // passa para próximo inimigo
+                                    }
+                                } catch (Throwable ignored) {
+                                    // não interromper fluxo por causa de reflexões
+                                }
+                            }
+                        }
+                        // remove ataques que acertaram (se o Ataque suporta remoção direta)
+                        if (!ataquesParaRemover.isEmpty()) {
+                            for (Ataque ar : ataquesParaRemover) {
+                                try { ataques.remove(ar); } catch (Throwable ignored) {}
+                            }
+                        }
+                    } catch (Throwable t) {
+                        Gdx.app.error("Network", "Erro ao detectar hits cliente: " + t.getMessage());
+                    }
+                }
             }
 
             // Envia a posição do jogador local e atualiza a posição do jogador remoto
@@ -355,8 +503,10 @@ public class Jogo extends Game {
                 networkManager.sendPlayerPosition(megaMan.getPosX(), megaMan.getPosY(), isServer ? 0 : 1); // ID 0 para servidor, 1 para cliente
                 if (isServer) {
                     networkManager.sendEnemyPositions(); // Envia posições dos inimigos se for servidor
+                    
                 }
             }
+            System.out.println(megaMan.getPosX() + " - " + megaMan.getPosY());
 
             mutaSomFundo(); 
             desenhaItens(); 
@@ -377,8 +527,9 @@ public class Jogo extends Game {
     }
 
     private void controleFases(){
-        if(!segundaFaseAtivada){
-            if(penguin != null & penguin.getVida() <= 0){
+        // Proteção: verificar primeiro se penguin != null e usar && (short-circuit)
+        if (!segundaFaseAtivada) {
+            if (penguin != null && penguin.getVida() <= 0) {
                 iniciarSegundaFase();
             }
         }
@@ -394,14 +545,13 @@ public class Jogo extends Game {
             }
         }
         
-        if (megaMan.isMorreu() && vidasMegaMan <= 0) {
+        if ((megaMan.isMorreu()) && vidasMegaMan <= 0) {
             somMorte.play();
             segundaFaseAtivada = false; 
             jogoIniciado = false;
             setScreen(new TelaGameOver(this));
             return;
         }
-
     }
 
     private void iniciarSegundaFase(){
@@ -425,12 +575,12 @@ public class Jogo extends Game {
 
         megaMan.confereMortePorQueda(); 
 
-        if(megaMan.isMorreu() && vidasMegaMan > 0){
+        if((megaMan.isMorreu()) && vidasMegaMan > 0){
             vidasMegaMan--;
             megaMan.setVida(16);
             megaMan.setPosicao(330, 2517);
             megaMan.setMorreu(false);
-            criarInimigos(segundaFaseAtivada);
+            //criarInimigos(segundaFaseAtivada);
         }
 
         if(vidasMegaMan <= 0){
@@ -465,6 +615,10 @@ public class Jogo extends Game {
         inimigos.reset();
         while (inimigos.hasNext()) {
             Inimigo inimigo = inimigos.next();
+            // Skip calling AI-follow for remote placeholders controlled by server
+            if (remotePlaceholders.contains(inimigo)) {
+                continue;
+            }
             inimigo.setPosicaoMegaMan(new Vector2(megaMan.getPosX(), megaMan.getPosY()));
         }
         inimigos.reset();
@@ -485,14 +639,16 @@ public class Jogo extends Game {
 
     private void colisoes() {
 
-        gerenciadorColisoes.colisaoPersonagensPlataformas(mapa.getRetangulosColisao(), personagens);
+        Mapa mapaAux = segundaFaseAtivada ? mapaSegundaFase : mapa;
+
+        gerenciadorColisoes.colisaoPersonagensPlataformas(mapaAux.getRetangulosColisao(), personagens);
 
         personagens.reset();
         while (personagens.hasNext()) {
             Personagem personagem = personagens.next();
             gerenciadorColisoes.colisaoPersonagemParedes(
-                mapa.getRetangulosColisaoParedeDireita(),
-                mapa.getRetangulosColisaoParedeEsquerda(),
+                mapaAux.getRetangulosColisaoParedeDireita(),
+                mapaAux.getRetangulosColisaoParedeEsquerda(),
                 personagem
             );
         }
@@ -511,7 +667,7 @@ public class Jogo extends Game {
         personagens.reset();
         while (personagens.hasNext()) {
             Personagem personagem = personagens.next();
-            gerenciadorColisoes.colisaoAtaquesPlataformas(mapa.getRetangulosColisao(), personagem.getAtaquesAtivos());
+            gerenciadorColisoes.colisaoAtaquesPlataformas(mapaAux.getRetangulosColisao(), personagem.getAtaquesAtivos());
         }
         personagens.reset();
     }
@@ -587,10 +743,11 @@ public class Jogo extends Game {
     }
 
     private void desenhaItens(){
+        Mapa mapaAux = segundaFaseAtivada ? mapaSegundaFase : mapa;
         batch.begin();
         batch.draw(texturaFundo, camera.position.x - camera.viewportWidth / 2, camera.position.y - camera.viewportHeight / 2, camera.viewportWidth, camera.viewportHeight );
         batch.end();
-        mapa.render(camera);
+        mapaAux.render(camera);
 
         batch.begin();
         desenharEntidades(); 
@@ -646,6 +803,11 @@ public class Jogo extends Game {
     // Define se esta instância do jogo é o servidor
     public void setIsServer(boolean isServer) {
         this.isServer = isServer;
+        // Se o NetworkManager já foi criado, recrie-o com a nova configuração
+        if (networkManager != null) {
+            networkManager.dispose();
+            networkManager = new NetworkManager(this, this.isServer);
+        }
     }
 
     public boolean getIsServer (){
@@ -655,6 +817,15 @@ public class Jogo extends Game {
     // Define se o jogo está em modo multiplayer
     public void setIsMultiplayer(boolean isMultiplayer) {
         this.isMultiplayer = isMultiplayer;
+        // Se ativou multiplayer depois dos objetos já terem sido criados, inicializa a rede
+        if (this.isMultiplayer && objetosCriados && networkManager == null) {
+            iniciaMultiplayer();
+        }
+        // Se desativou multiplayer, descarte o gerenciador de rede
+        if (!this.isMultiplayer && networkManager != null) {
+            networkManager.dispose();
+            networkManager = null;
+        }
     }
 
     public void setSegundaFaseAtivada(boolean ativada) {
@@ -671,9 +842,14 @@ public class Jogo extends Game {
     public void reset(){
         vidasMegaMan = 3;
         segundaFaseAtivada = false;
+        objetosCriados = false; // permitir recriar depois do reset
         dispose();
         //create();
+        // Opcional: abrir novamente a tela inicial ou recriar imediatamente:
+        // setScreen(new TelaInicial(this)); // se quiser voltar à tela inicial
+        // ou recriar diretamente:
         criaObjetosJogo();
+        objetosCriados = true;
     }
 
     public void updateRemotePlayer(PlayerPosition pos) {
@@ -697,11 +873,77 @@ public class Jogo extends Game {
 
     public void updateEnemies(EnemyPosition pos) {
         if (!isServer) { // Apenas o cliente atualiza as posições dos inimigos
-            int numEnemies = Math.min(inimigos.getColecao().tamanho(), pos.x.size());
-            for (int i = 0; i < numEnemies; i++) {
-                Inimigo inimigo = inimigos.get(i);
-                ((Personagem) inimigo).setPosicao(pos.x.get(i), pos.y.get(i));
+            for (int i = 0; i < pos.ids.size(); i++) {
+                int id = pos.ids.get(i);
+                float x = pos.x.get(i);
+                float y = pos.y.get(i);
+                Inimigo local = remoteEnemyMap.get(id);
+                if (local == null) {
+                    // Cria placeholder – usamos Voador como genérico visual
+                    if (texturaVoador == null) carregaTexturas();
+                    Voador placeholder = new Voador(texturaVoador);
+                    placeholder.setPosicao(x, y);
+                    inimigos.add(placeholder);
+                    personagens.add(placeholder);
+                    remoteEnemyMap.put(id, placeholder);
+                    remotePlaceholders.add(placeholder); // marcar como controlado pelo servidor
+                    // inicializar vida conhecida (se a classe tiver)
+                    try { remoteEnemyLastVida.put(id, placeholder.getVida()); } catch (Throwable ignored) {}
+                } else {
+                    ((Personagem) local).setPosicao(x, y);
+                }
             }
+        }
+    }
+
+    // NEW: atualiza ou cria o Pinguim local a partir do DTO recebido pela rede
+    public void updatePinguinState(com.tp2.megamanx.NetworkManager.PinguinState state) {
+        if (state == null) return;
+        // não sobrescrever estado do servidor local; aplicar apenas no cliente
+        if (!isServer) {
+            try {
+                if (texturaPenguin == null) {
+                    carregaTexturas(); // garante que textura exista no cliente
+                }
+                if (penguin == null) {
+                    penguin = new Pinguim(texturaPenguin);
+                    // evita duplicar nas coleções
+                    try { inimigos.add(penguin); } catch (Throwable ignored) {}
+                    try { personagens.add(penguin); } catch (Throwable ignored) {}
+                }
+                try { penguin.setPosicao(state.x, state.y); } catch (Throwable ignored) {}
+                try { penguin.setVida(state.vida); } catch (Throwable ignored) {}
+            } catch (Throwable t) {
+                Gdx.app.error("Network", "updatePinguinState failed: " + t.getMessage());
+            }
+        }
+    }
+
+    // NEW: chamado pelo servidor quando receber EnemyHit — aplica dano no servidor (autoridade)
+    public void applyEnemyHit(int enemyId, int damage) {
+        if (!isServer) return;
+        inimigos.reset();
+        while (inimigos.hasNext()) {
+            Inimigo inimigo = inimigos.next();
+            if (inimigo.hashCode() == enemyId) {
+                try {
+                    inimigo.tomarDano(damage);
+                } catch (Throwable t) {
+                    Gdx.app.error("Game", "Failed applyEnemyHit (tomarDano): " + t.getMessage());
+                }
+                // se morreu, remover placeholder mappings caso exista (segurança)
+                try {
+                    // supondo que inimigo.morrer() marque estado; se já morreu, limpe map/set
+                    // verifica via reflexão/try para evitar NPEs
+                    // (implementação concreta pode fornecer isDead/getVida)
+                    inimigos.reset();
+                } catch (Throwable ignored) {}
+                break;
+            }
+        }
+        inimigos.reset();
+        if (networkManager != null) {
+            networkManager.sendEnemyPositions();
         }
     }
 
@@ -709,6 +951,9 @@ public class Jogo extends Game {
     public void dispose() {
         if(mapa != null) {
             mapa.dispose();
+        }
+        if(mapaSegundaFase != null) {
+            mapaSegundaFase.dispose();
         }
         if(batch != null) {
             batch.dispose();
@@ -726,11 +971,9 @@ public class Jogo extends Game {
             somVitoria.pause();
             somVitoria.dispose();
         }
-
         if (fonteVida != null) {
             fonteVida.dispose();
         }
-
         TipoAtaque.disposeTodasTexturas();
         if (texturaMegaMan != null) {
             texturaMegaMan.dispose();
@@ -759,11 +1002,9 @@ public class Jogo extends Game {
         if (texturaSpark != null) {
             texturaSpark.dispose();
         }
-
         if (networkManager != null) {
             networkManager.dispose();
         }
-
         super.dispose();
     }
 

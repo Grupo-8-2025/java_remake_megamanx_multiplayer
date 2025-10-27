@@ -59,16 +59,22 @@ public class TelaInicial implements Screen {
 
     public void verificaSelecaoModo() {
         if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.NUM_1)) {
-            iniciarJogo();
+            iniciarJogo(false, false);
         } else if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.NUM_2)) {
-            iniciarJogo();
+            iniciarJogo(true, true);
         } else if (Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.NUM_3)) {
-            iniciarJogo();
+            iniciarJogo(true, false);
         }
     }
 
-    private void iniciarJogo(){
-        jogo.setIsMultiplayer(false);
+    private void iniciarJogo(boolean setIsMultiplayer, boolean isServer) {
+        jogo.setIsMultiplayer(setIsMultiplayer);
+        if (isServer && setIsMultiplayer) {
+            jogo.isServer = true;
+        }
+        if (!isServer && setIsMultiplayer) {
+            jogo.isServer = false;
+        }
         digitandoNome = false; 
         modoSelecionado = true;
         jogo.setJogoIniciado(true);
@@ -144,4 +150,12 @@ public class TelaInicial implements Screen {
         fontGenerator.dispose();
     }
 
+    // Exemplo: quando o usuário terminar o fluxo (todos os botões clicados), chame:
+    private void onInicialConcluida() {
+        // chamada direta ao jogo para iniciar a criação dos objetos
+        jogo.iniciarJogo();
+
+        // opcional: mudar de tela se desejar iniciar o jogo automaticamente
+        // jogo.setScreen(/* tela do jogo ou null se o Jogo irá gerir isso */);
+    }
 }

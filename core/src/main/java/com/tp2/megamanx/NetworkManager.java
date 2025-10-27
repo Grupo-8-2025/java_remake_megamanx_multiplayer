@@ -8,10 +8,17 @@ import com.esotericsoftware.kryonet.Client;
 import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
+import com.tp2.megamanx.Iterators.InimigoIterator;
+import com.tp2.megamanx.inimigos.Pinguim;
 
 import java.util.ArrayList;
 
 import com.badlogic.gdx.Gdx;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import java.io.StringWriter;
+import java.io.PrintWriter;
 
 public class NetworkManager {
     private Server server; // Servidor KryoNet
@@ -37,7 +44,7 @@ public class NetworkManager {
             int tcpPort = basePort + i;
             int udpPort = tcpPort + 222; // 54777 - 54555 = 222
             try {
-                server = new Server(1048576, 1048576); // Aumentar buffers para 1MB para evitar overflow
+                server = new Server(); // Aumentar buffers para 1MB para evitar overflow
                 registerClasses(server); // Registra as classes que serão enviadas
                 server.start(); // Inicia o servidor
                 server.bind(tcpPort, udpPort);
@@ -62,6 +69,10 @@ public class NetworkManager {
                     if (object instanceof PlayerPosition) { // Se receber a posição do jogador
                         PlayerPosition pos = (PlayerPosition) object; // Atualiza a posição do jogador remoto
                         jogo.updateRemotePlayer(pos); // Atualiza a posição do jogador remoto
+                    } else if (object instanceof EnemyHit) {
+                        EnemyHit hit = (EnemyHit) object;
+                        // Delegar ao jogo para aplicar o dano (servidor é autoritativo)
+                        jogo.applyEnemyHit(hit.id, hit.damage);
                     }
                 }
             });
@@ -96,33 +107,176 @@ public class NetworkManager {
                     if (object instanceof PlayerPosition) { // Se receber a posição do jogador
                         PlayerPosition pos = (PlayerPosition) object; // Atualiza a posição do jogador remoto
                         jogo.updateRemotePlayer(pos); // Atualiza a posição do jogador remoto
-                    }
-                    if (object instanceof EnemyPosition) { // Se receber a posição dos inimigos
+                    } else if (object instanceof EnemyPosition) { // Se receber a posição dos inimigos
                         EnemyPosition pos = (EnemyPosition) object; // Atualiza a posição dos inimigos
                         jogo.updateEnemies(pos); // Atualiza a posição dos inimigos
+                    } else if (object instanceof PinguinState) { // Recebe estado leve do pinguim
+                        PinguinState st = (PinguinState) object;
+                        // Atualiza/Cria pinguim local sem depender de desserializar o objeto original
+                        jogo.updatePinguinState(st);
                     }
-                    //if(object instanceof PosicaoTiro){
-                        //PosicaoTiro pos = (PosicaoTiro) object; // Atualiza a posição dos tiros
-                        //jogo.updateTiroPosition(pos);// Atualiza a posição do tiro
-                    //}
+                    // outros tipos leves (PosicaoTiro, etc.) podem ser tratados aqui
                 }
             });
         }
     }
 
+    // ADDED: NullSerializer para evitar serializar recursos/problemáticas nativas (retorna null ao desserializar)
+    private static class NullSerializer<T> extends Serializer<T> {
+        @Override
+        public void write(com.esotericsoftware.kryo.Kryo kryo, Output output, T object) {
+            // intentionally write nothing
+        }
+        @Override
+        public T read(com.esotericsoftware.kryo.Kryo kryo, Input input, Class<T> type) {
+            return null;
+        }
+    }
+
     /* Registra as classes que serão enviadas */
     private void registerClasses(Object network) {
-        if (network instanceof Server) { // Registra as classes que serão enviadas se a instância for um servidor
-            ((Server) network).getKryo().register(PlayerPosition.class);
-            ((Server) network).getKryo().register(EnemyPosition.class);
-            //((Server) network).getKryo().register(PosicaoTiro.class);
-            ((Server) network).getKryo().register(ArrayList.class);  
-        } else if (network instanceof Client) { // Registra as classes que serão enviadas se a instância for um cliente
-            ((Client) network).getKryo().register(PlayerPosition.class);
-            ((Client) network).getKryo().register(EnemyPosition.class);
-            //((Client) network).getKryo().register(PosicaoTiro.class);
-            ((Client) network).getKryo().register(ArrayList.class);
+        // Register only light-weight DTOs and basic Java types. Do NOT register LibGDX engine classes
+        // or game object classes that hold Textures/Sounds/etc. This avoids Kryo registration id mismatches.
+        com.esotericsoftware.kryo.Kryo kryo;
+        if (network instanceof Server) {
+            kryo = ((Server) network).getKryo();
+        } else {
+            kryo = ((Client) network).getKryo();
         }
+
+        try { kryo.setRegistrationRequired(false); } catch (Throwable ignored) {}
+
+        // DTOs used by the networking layer
+        kryo.register(PlayerPosition.class);
+        kryo.register(EnemyPosition.class);
+        kryo.register(PosicaoTiro.class); // if used
+        kryo.register(PinguinState.class);
+        kryo.register(EnemyHit.class);
+
+        // Basic collections/primitives used inside DTOs
+        kryo.register(java.util.ArrayList.class);
+        kryo.register(java.lang.Float.class);
+        kryo.register(java.lang.Integer.class);
+        kryo.register(float[].class);
+        kryo.register(int[].class);
+
+        // If you later add new DTOs, register them here (both client and server must register same DTOs).
+    }
+
+    // ADDED: tenta configurar DefaultInstantiatorStrategy com StdInstantiatorStrategy (Objenesis) via reflection.
+    private void configureKryo(com.esotericsoftware.kryo.Kryo kryo) {
+        try {
+            // Cria instância de org.objenesis.strategy.StdInstantiatorStrategy via reflection
+            Class<?> stdClass = Class.forName("org.objenesis.strategy.StdInstantiatorStrategy");
+            Object stdInstance = stdClass.getDeclaredConstructor().newInstance();
+
+            // Cria instância de com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy via reflection,
+            // passando o StdInstantiatorStrategy no construtor.
+            Class<?> defaultStratClass = Class.forName("com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy");
+            java.lang.reflect.Constructor<?> ctor = defaultStratClass.getConstructor(stdClass.getInterfaces().length > 0 ? stdClass.getInterfaces()[0] : stdClass);
+            Object defaultStrategyInstance;
+            try {
+                // Tenta com o tipo concreto do parâmetro (caso seja exatamente org.objenesis.strategy.InstantiatorStrategy)
+                defaultStrategyInstance = ctor.newInstance(stdInstance);
+            } catch (Exception nsme) {
+                // Fallback: tentar achar qualquer construtor e invocar
+                java.lang.reflect.Constructor<?>[] ctors = defaultStratClass.getConstructors();
+                if (ctors.length > 0) {
+                    defaultStrategyInstance = ctors[0].newInstance(stdInstance);
+                } else {
+                    throw new RuntimeException("No suitable constructor found for DefaultInstantiatorStrategy");
+                }
+            }
+
+            // Invoca kryo.setInstantiatorStrategy(...) por reflexão (procura método com 1 parâmetro)
+            java.lang.reflect.Method setMethod = null;
+            for (java.lang.reflect.Method m : kryo.getClass().getMethods()) {
+                if ("setInstantiatorStrategy".equals(m.getName()) && m.getParameterCount() == 1) {
+                    setMethod = m;
+                    break;
+                }
+            }
+            if (setMethod != null) {
+                setMethod.invoke(kryo, defaultStrategyInstance);
+                Gdx.app.log("Network", "Kryo instantiator strategy set via reflection to DefaultInstantiatorStrategy (Objenesis)");
+            } else {
+                Gdx.app.log("Network", "Kryo.setInstantiatorStrategy method not found via reflection");
+            }
+        } catch (ClassNotFoundException cnf) {
+            Gdx.app.log("Network", "Objenesis / Kryo util classes not found on classpath; Kryo may require no-arg constructors for some classes.");
+        } catch (Throwable t) {
+            Gdx.app.error("Network", "Failed to set Kryo instantiator strategy via reflection: " + t.getMessage());
+            Gdx.app.error("Network", exceptionToString(t));
+        }
+        try {
+            // Fallback: não exigir registro estrito
+            kryo.setRegistrationRequired(false);
+        } catch (Throwable ignored) {}
+    }
+
+    // Novo: registra um conjunto amplo de classes do pacote com.badlogic.gdx.graphics usando reflection
+    private void registerGdxGraphicClasses(com.esotericsoftware.kryo.Kryo kryo) {
+        String[] classes = new String[] {
+            "com.badlogic.gdx.graphics.Color",
+            "com.badlogic.gdx.graphics.GL20",
+            "com.badlogic.gdx.graphics.Pixmap",
+            "com.badlogic.gdx.graphics.Pixmap$Format",
+            "com.badlogic.gdx.graphics.Texture",
+            "com.badlogic.gdx.graphics.Texture$TextureFilter",
+            "com.badlogic.gdx.graphics.Texture$TextureWrap",
+            "com.badlogic.gdx.graphics.TextureData",
+            "com.badlogic.gdx.graphics.glutils.FileTextureData",
+            "com.badlogic.gdx.graphics.glutils.ShapeRenderer",
+            "com.badlogic.gdx.graphics.glutils.ShaderProgram",
+            "com.badlogic.gdx.graphics.Mesh",
+            "com.badlogic.gdx.graphics.VertexAttribute",
+            "com.badlogic.gdx.graphics.VertexAttributes",
+            "com.badlogic.gdx.graphics.FrameBuffer",
+            "com.badlogic.gdx.graphics.FPSLogger",
+            "com.badlogic.gdx.graphics.Pixmap$Blending",
+            "com.badlogic.gdx.graphics.Pixmap$Filter",
+            "com.badlogic.gdx.graphics.g2d.TextureAtlas", // g2d often used; safe to try
+            // inner enum for Files
+            "com.badlogic.gdx.Files$FileType"
+        };
+        for (String name : classes) {
+            tryRegisterIfPresent(kryo, name);
+        }
+        // também tentar registrar classes comuns do subpackage g2d (se desejar ampliar)
+        String[] g2d = new String[] {
+            "com.badlogic.gdx.graphics.g2d.TextureRegion",
+            "com.badlogic.gdx.graphics.g2d.SpriteBatch",
+            "com.badlogic.gdx.graphics.g2d.BitmapFont",
+            "com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator",
+            "com.badlogic.gdx.graphics.g2d.TextureAtlas$TextureAtlasData"
+        };
+        for (String name : g2d) {
+            tryRegisterIfPresent(kryo, name);
+        }
+    }
+
+    // Helper: tenta registrar uma classe no Kryo somente se ela existir no classpath
+    private void tryRegisterIfPresent(com.esotericsoftware.kryo.Kryo kryo, String className) {
+        try {
+            Class<?> clazz = Class.forName(className);
+            kryo.register(clazz);
+            Gdx.app.log("Network", "Kryo registered class: " + className);
+        } catch (ClassNotFoundException e) {
+            // Classe não presente no core (normal). Ignorar.
+            Gdx.app.log("Network", "Class not present, skipping Kryo register: " + className);
+        } catch (Throwable t) {
+            // Qualquer outro problema no registro: log e continue
+            Gdx.app.error("Network", "Failed to register class via reflection: " + className + " -> " + t.getMessage());
+            Gdx.app.error("Network", exceptionToString(t));
+        }
+    }
+
+    // ADDED: helper para converter stacktrace em String
+    private String exceptionToString(Throwable t) {
+        StringWriter sw = new StringWriter();
+        PrintWriter pw = new PrintWriter(sw);
+        t.printStackTrace(pw);
+        return sw.toString();
     }
 
     // Envia a posição do jogador para o outro jogador
@@ -139,6 +293,23 @@ public class NetworkManager {
         if (isServer && server != null) { // Se for o servidor
             EnemyPosition pos = jogo.getEnemyPositions(); // Pega a posição dos inimigos
             server.sendToAllTCP(pos); // Envia para todos os clientes conectados
+        }
+    }
+    
+    // Envia apenas EnemyPosition (evita enviar InimigoIterator)
+    public void sendInimigos(InimigoIterator inimigos){
+        if (isServer && server != null) {
+            EnemyPosition pos = jogo.getEnemyPositions();
+            server.sendToAllTCP(pos);
+        }
+    }
+
+    // Envia apenas estado leve do pinguim (posição + vida)
+    public void sendPinguin(Pinguim penguin) {
+        if (isServer && server != null) {
+            if (penguin == null) return;
+            PinguinState st = new PinguinState(penguin.getPosX(), penguin.getPosY(), penguin.getVida());
+            server.sendToAllTCP(st);
         }
     }
 
@@ -160,4 +331,38 @@ public class NetworkManager {
             client.stop();
         }
     }
+
+    // NEW: lightweight DTO para enviar estado do Pinguim (evita serializar Texture/recursos)
+    public static class PinguinState {
+        public float x;
+        public float y;
+        public int vida;
+        public PinguinState() {}
+        public PinguinState(float x, float y, int vida) { this.x = x; this.y = y; this.vida = vida; }
+    }
+
+	// NEW DTO: cliente -> servidor indica que um inimigo recebeu dano
+	public static class EnemyHit {
+		public int id;
+		public int damage;
+		public EnemyHit() {}
+		public EnemyHit(int id, int damage) { this.id = id; this.damage = damage; }
+	}
+
+	// Envia evento de hit (cliente -> servidor)
+	public void sendEnemyHit(int enemyId, int damage) {
+		if (!isServer && client != null) {
+			EnemyHit hit = new EnemyHit(enemyId, damage);
+			try {
+				client.sendTCP(hit);
+			} catch (Throwable t) {
+				Gdx.app.error("Network", "Failed to send EnemyHit: " + t.getMessage());
+			}
+		} else if (isServer && server != null) {
+			// Se estiver rodando em modo servidor local (diagnóstico), processa direto
+			jogo.applyEnemyHit(enemyId, damage);
+			// e envia atualização de inimigos para clientes
+			server.sendToAllTCP(jogo.getEnemyPositions());
+		}
+	}
 }

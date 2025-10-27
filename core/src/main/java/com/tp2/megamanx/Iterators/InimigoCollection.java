@@ -1,6 +1,6 @@
 package com.tp2.megamanx.Iterators;
 
-import com.tp2.megamanx.Inimigo;
+import com.tp2.megamanx.inimigos.Inimigo;
 
 // Classe que representa uma coleção de inimigos, permitindo adicionar, remover e iterar sobre eles
 public class InimigoCollection implements IterableCollection<Inimigo> {
