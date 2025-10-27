@@ -13,23 +13,35 @@ public class Vile extends Boss {
     public Vile(Texture textura, Ataque ataque) {
         
         super(textura, new TextureRegion(textura, 0, 0, 33, 45), 
-        new Vector2(0.5f, 2.0f), 300, 500, 20, 3, ataque);
+        new Vector2(0.5f, 2.0f), 5855, 900, 25, 3, ataque);
 
         ataquesAtivos = new ArrayList<>();
     }
 
+    @Override
+    protected void setRegion(int cordX, int cordY, int largura, int altura) {
+		region.setRegion(cordX, cordY, largura, altura);
+		boolean flipou = region.isFlipX();
+
+		if(paraDireita == flipou) {
+			region.flip(true, false);
+		}
+
+		corpo.setRegion(region);
+	}
+
     public void atualizar(){
         if(!morreu && Math.abs(posMegaMan.x - posX) < 600){
-            sofrerGravidade(posY, 1, 0, 53, 0, 53, 45, 0, 0, 53, 45); 
+            sofrerGravidade(posY, 1, 0, 53, 0, 43, 45, 0, 0, 43, 45); 
 
-            delimitarMovimento(185, 630); 
+            delimitarMovimento(5200, 6200); 
 
             int acaoAnterior = determinaAcao;
             iterarDeltaTime(); 
             atualizarAcao(); 
 
-            tomandoDanoPorAtaque(1, 43, 731, 19, 43, 41, 
-            0, 24, 43, 36); 
+            tomandoDanoPorAtaque(1, 33, 0, 0, 43, 45, 
+            0, 0, 43, 45); 
             
             if(!noAr){
                 if(determinaAcao != acaoAnterior){
@@ -73,7 +85,7 @@ public class Vile extends Boss {
     @Override
     public void atacar(){
         if(podeAtacar &&  deltaTime <= 0f && !tomandoDano){
-            setRegion(53, 0, 53, 45); // Frame de ataque
+            setRegion(53, 0, 43, 45); // Frame de ataque
 
             float posXataque = 0;
             float posYataque = corpo.getY() + 10f;
@@ -110,7 +122,7 @@ public class Vile extends Boss {
         if(vida <= 0){
             morreu = true;
             iterarDeltaTime();
-            setRegion(0, 0, 33, 45); 
+            setRegion(0, 0, 43, 45); 
             if (deltaTime >= 3.0f) {
                 setPosicao(-500, -500); 
             }
