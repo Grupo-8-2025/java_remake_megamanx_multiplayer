@@ -7,7 +7,6 @@ import com.tp2.megamanx.inimigos.Inimigo;
 import java.util.ArrayList;
 
 import com.badlogic.gdx.math.Rectangle;
-import com.badlogic.gdx.math.Vector2;
 import com.badlogic.gdx.utils.Array;
 
 public class GerenciadorColisoes {
@@ -19,31 +18,36 @@ public class GerenciadorColisoes {
     }
 
     public void colisaoPersonagemParedes(Array<Rectangle> paredesDireita, Array<Rectangle> paredesEsquerda, Personagem personagem) {
-        Rectangle corpo = personagem.getCorpo().getBoundingRectangle();
+    Rectangle corpo = personagem.getCorpo().getBoundingRectangle();
         boolean colidiuDireita = false;
         boolean colidiuEsquerda = false;
 
+        // Checa colisão com paredes da direita
         for (Rectangle parede : paredesDireita) {
             if (corpo.overlaps(parede)) {
                 colidiuDireita = true;
-                personagem.setNaParede(true);
-                personagem.setPodeAndarDireita(false);
+                break;
             }
         }
 
+        // Checa colisão com paredes da esquerda
         for (Rectangle parede : paredesEsquerda) {
             if (corpo.overlaps(parede)) {
                 colidiuEsquerda = true;
-                personagem.setNaParede(true);
-                personagem.setPodeAndarEsquerda(false);
+                break;
             }
         }
 
-        if (!colidiuDireita && !colidiuEsquerda) {
-            personagem.setNaParede(false);
-            personagem.setPodeAndarDireita(true);
-            personagem.setPodeAndarEsquerda(true);
+        // Atualiza flags de movimento para todos os personagens
+        personagem.setPodeAndarDireita(!colidiuDireita);
+        personagem.setPodeAndarEsquerda(!colidiuEsquerda);
+
+        // Se for MegaMan, mantém lógica do naParede
+        if(personagem instanceof MegaMan){
+            MegaMan megaMan = (MegaMan) personagem;
+            megaMan.setNaParede(colidiuDireita || colidiuEsquerda);
         }
+
     }
 
     public void colisaoPersonagensPlataformas(Array<Rectangle> plataformas, PersonagemIterator personagens){

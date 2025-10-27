@@ -27,7 +27,7 @@ public class TelaGameOver implements Screen {
         this.jogo = jogo;
         batch = new SpriteBatch(); 
         shapeRenderer = new ShapeRenderer(); 
-        imgFundo = new Texture("imagens/TelaInicial/Mega_Man_X_Logo.png");
+        imgFundo = new Texture("assets/imagens/Mega_Man_X_Logo.png");
 
         // Configuração da fonte personalizada
         fontGenerator = new FreeTypeFontGenerator(Gdx.files.internal("font.ttf"));

@@ -22,7 +22,8 @@ public class MegaMan extends Personagem {
     private boolean apertouX;
     private boolean apertouShift;
 
-    private boolean naEscada;                      
+    private boolean naEscada;      
+    private boolean naParede;                            
     private boolean colidiuInimigo;                 
     private boolean jaTomouDano;                    
     private boolean tomandoDano;                   
@@ -48,6 +49,8 @@ public class MegaMan extends Personagem {
         tomandoDano = false;
         ganhouJogo = false;
         podeVoltarInicio = false;
+        naParede = false;
+
         paraDireita = true;
         criarAtaques(); 
     }
@@ -61,24 +64,26 @@ public class MegaMan extends Personagem {
             new Ataque(
                 new TextureRegion(
                     TipoAtaque.TIRO_NORMAL.getTextura(), 
-                    TipoAtaque.TIRO_NORMAL.getCordX1(), 
-                    TipoAtaque.TIRO_NORMAL.getCordY1(),
-                    TipoAtaque.TIRO_NORMAL.getLargura1(), 
-                    TipoAtaque.TIRO_NORMAL.getAltura1()),
+                    TipoAtaque.TIRO_NORMAL.getCordX(), 
+                    TipoAtaque.TIRO_NORMAL.getCordY(),
+                    TipoAtaque.TIRO_NORMAL.getLargura(), 
+                    TipoAtaque.TIRO_NORMAL.getAltura()),
                 new Vector2(0.5f, 1.5f), -100, -100, 
-                TipoAtaque.TIRO_NORMAL, 0)
+                TipoAtaque.TIRO_NORMAL, 0, paraDireita
+            )
         );
 
         tiposAtaque.add(
             new Ataque(
                 new TextureRegion(
                     TipoAtaque.TIRO_AZUL.getTextura(), 
-                    TipoAtaque.TIRO_AZUL.getCordX1(), 
-                    TipoAtaque.TIRO_AZUL.getCordY1(),
-                    TipoAtaque.TIRO_AZUL.getLargura1(), 
-                    TipoAtaque.TIRO_AZUL.getAltura1()),
+                    TipoAtaque.TIRO_AZUL.getCordX(), 
+                    TipoAtaque.TIRO_AZUL.getCordY(),
+                    TipoAtaque.TIRO_AZUL.getLargura(), 
+                    TipoAtaque.TIRO_AZUL.getAltura()),
                 new Vector2(0.5f, 1.5f), -100, -100, 
-                TipoAtaque.TIRO_AZUL, 0)
+                TipoAtaque.TIRO_AZUL, 0, paraDireita
+            )
         );
         
         ataqueAtual = tiposAtaque.get(0); 
@@ -99,6 +104,26 @@ public class MegaMan extends Personagem {
     public void setTomandoDano(boolean tomandoDano) { this.tomandoDano = tomandoDano; }
     public boolean isGanhouJogo() { return ganhouJogo; }
     public void setGanhouJogo(boolean ganhouJogo) { this.ganhouJogo = ganhouJogo; }
+
+        public boolean isNaParede() {
+        return naParede;
+    }
+
+    public void setNaParede(boolean naParede) {
+        this.naParede = naParede;
+    }
+
+    @Override
+    protected void setRegion(int cordX, int cordY, int largura, int altura) {
+		region.setRegion(cordX, cordY, largura, altura);
+		boolean flipou = region.isFlipX();
+
+		if(paraDireita == flipou) {
+			region.flip(true, false);
+		}
+
+		corpo.setRegion(region);
+	}
 
     public boolean testarTecla(int tecla) {
         if(Gdx.input.isKeyPressed(tecla)){
@@ -198,7 +223,7 @@ public class MegaMan extends Personagem {
         if(testarTecla(Input.Keys.SPACE) && !noAr){
             noAr = true;
             naPlataforma = false;
-            velY = 5;
+            velY = 8;
             posY = posY + velY;            
             setPosicao(posX, posY);
         }
@@ -294,12 +319,12 @@ public class MegaMan extends Personagem {
             Ataque novoAtaque = new Ataque(
                 new TextureRegion(
                     ataqueAtual.getTipo().getTextura(),
-                    ataqueAtual.getTipo().getCordX1(), 
-                    ataqueAtual.getTipo().getCordY1(),
-                    ataqueAtual.getTipo().getLargura1(), 
-                    ataqueAtual.getTipo().getAltura1()),
+                    ataqueAtual.getTipo().getCordX(), 
+                    ataqueAtual.getTipo().getCordY(),
+                    ataqueAtual.getTipo().getLargura(), 
+                    ataqueAtual.getTipo().getAltura()),
                 new Vector2(0.3f, 1.2f), posXataque, posYataque, 
-                ataqueAtual.getTipo(), velocidadeAtaque
+                ataqueAtual.getTipo(), velocidadeAtaque, paraDireita
             );
             
             novoAtaque.setColidiu(false);

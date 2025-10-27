@@ -13,16 +13,17 @@ public class Ataque extends Entidade {
 	private boolean podeDefinirPosicao; 
 	private boolean disparou;          
 
-	public Ataque(TextureRegion region, Vector2 escala, float posX, float posY, TipoAtaque tipo, float velocidade){
+	public Ataque(TextureRegion region, Vector2 escala, float posX, float posY, TipoAtaque tipo, float velocidade, boolean direcaoPersonagem){
 		super(tipo.getTextura(), region, escala, posX, posY);
 		
 		this.tipo = tipo;
 		this.velocidade = velocidade;
 
 		this.colidiu = false;                         
-		this.podeDisparar = false;                    
+		this.podeDisparar = true;                    
 		this.podeDefinirPosicao = true;               
-		this.disparou = false;                        
+		this.disparou = false;  
+		this.paraDireita = direcaoPersonagem;                      
 	}
 
 	public boolean isDisparou() {
@@ -61,6 +62,18 @@ public class Ataque extends Entidade {
 		this.podeDefinirPosicao = podeDefinirPosicao;
 	}
 
+	@Override
+    protected void setRegion(int cordX, int cordY, int largura, int altura) {
+		region.setRegion(cordX, cordY, largura, altura);
+		boolean flipou = region.isFlipX();
+
+		if(paraDireita == flipou) {
+			region.flip(true, false);
+		}
+
+		corpo.setRegion(region);
+	}
+
 	/* 
 	@Override
 	protected void setRegion(int cordX, int cordY, int largura, int altura) {
@@ -87,11 +100,11 @@ public class Ataque extends Entidade {
 			setPosicao(posX + velocidade, posY);
 			
 			// Atualiza a região da textura para o frame atual da animação
-			setRegion(tipo.getCordX1(), tipo.getCordY1(), tipo.getLargura1(), tipo.getAltura1());
+			setRegion(tipo.getCordX(), tipo.getCordY(), tipo.getLargura(), tipo.getAltura());
 			
 			// Executa a animação do ataque usando os parâmetros do tipo
-			animar(tipo.getQtdFrames1(), tipo.getIncrementa1(), tipo.getCordX1(), 
-			tipo.getCordY1(), tipo.getLargura1(), tipo.getAltura1());
+			animar(tipo.getQtdFrames(), tipo.getIncrementa(), tipo.getCordX(), 
+			tipo.getCordY(), tipo.getLargura(), tipo.getAltura());
 		}
 	}
 

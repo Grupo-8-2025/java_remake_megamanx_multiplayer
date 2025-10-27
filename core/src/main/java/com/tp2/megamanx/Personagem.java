@@ -19,7 +19,6 @@ public class Personagem extends Entidade {
 
     protected boolean tomandoDano;         
     protected boolean naPlataforma;        
-    protected boolean naParede;            
     protected boolean podeAndarDireita;    
     protected boolean podeAndarEsquerda;   
     protected boolean noAr;                
@@ -57,7 +56,6 @@ public class Personagem extends Entidade {
     private void inicializarAtributosBooleanos(){
         tomandoDano = false;
         naPlataforma = false;
-        naParede = false;
         podeAndarDireita = true;
         podeAndarEsquerda = true;
         noAr = true; 
@@ -120,13 +118,7 @@ public class Personagem extends Entidade {
         this.podeAndarEsquerda = podeAndarEsquerda;
     }
 
-    public boolean isNaParede() {
-        return naParede;
-    }
 
-    public void setNaParede(boolean naParede) {
-        this.naParede = naParede;
-    }
 
     public boolean isNoAr() {
         return noAr;
@@ -136,12 +128,16 @@ public class Personagem extends Entidade {
         this.noAr = noAr;
     }
     
-
     public void mover() {}
 
     public void atacar(){}
 
-    public void morrer(){}
+    public void morrer(){
+        if(vida <= 0 || (posMegaMan.x > posX + 450)){
+            morreu = true;
+            setPosicao(-500, -500);
+        }
+    }
 
     public void tomarDano(int dano) {
         vida = vida - dano;
@@ -154,7 +150,7 @@ public class Personagem extends Entidade {
             iterarDeltaTime();
             animar(qtdFrames, incrementa, cordX1, cordY1, largura1, altura1);
             
-            if (deltaTime >= 3.0f) {
+            if (deltaTime >= 2.0f) {
                 tomandoDano = false;
                 setRegion(cordX2, cordY2, largura2, altura2); 
             }

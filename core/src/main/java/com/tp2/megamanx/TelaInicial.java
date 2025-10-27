@@ -36,7 +36,7 @@ public class TelaInicial implements Screen {
 
         spriteBatch = new SpriteBatch();
         portTela = new FitViewport(800, 500);
-        imgFundoMegaManX = new Texture("assets/imagens/TelaInicial/Mega_Man_X_Logo.png");
+        imgFundoMegaManX = new Texture("assets/imagens/Mega_Man_X_Logo.png");
     }
 
     void desenharTelaInicial(BitmapFont font, SpriteBatch spriteBatch, Texture imgFundoMegaManX, float worldHeight) {

@@ -190,13 +190,13 @@ public class Jogo extends Game {
         Ataque ataqueTrower = new Ataque(
             new TextureRegion(
                 TipoAtaque.BOLA_NEVE.getTextura(), 
-		        TipoAtaque.BOLA_NEVE.getCordX1(), 
-                TipoAtaque.BOLA_NEVE.getCordY1(),
-		        TipoAtaque.BOLA_NEVE.getLargura1(), 
-                TipoAtaque.BOLA_NEVE.getAltura1()
+		        TipoAtaque.BOLA_NEVE.getCordX(), 
+                TipoAtaque.BOLA_NEVE.getCordY(),
+		        TipoAtaque.BOLA_NEVE.getLargura(), 
+                TipoAtaque.BOLA_NEVE.getAltura()
             ), 
 		    new Vector2(0.05f, 0.5f), 0, 0, 
-            TipoAtaque.BOLA_NEVE, -5
+            TipoAtaque.BOLA_NEVE, -5, false
         );
 
         Trower trower = new Trower(texturaTrower, ataqueTrower);
@@ -246,12 +246,12 @@ public class Jogo extends Game {
         Ataque ataqueVile = new Ataque(
             new TextureRegion(
                 TipoAtaque.BOMBA.getTextura(), 
-		        TipoAtaque.BOMBA.getCordX1(), 
-                TipoAtaque.BOMBA.getCordY1(),
-		        TipoAtaque.BOMBA.getLargura1(), 
-                TipoAtaque.BOMBA.getAltura1()), 
+		        TipoAtaque.BOMBA.getCordX(), 
+                TipoAtaque.BOMBA.getCordY(),
+		        TipoAtaque.BOMBA.getLargura(), 
+                TipoAtaque.BOMBA.getAltura()), 
 		    new Vector2(0.05f, 0.5f), 0, 0, 
-            TipoAtaque.BOMBA, -5
+            TipoAtaque.BOMBA, -5, false
         );
         vile = new Vile(texturaVile, ataqueVile);
         inimigos.add(vile);
@@ -261,12 +261,12 @@ public class Jogo extends Game {
         Ataque ataqueSpark = new Ataque(
             new TextureRegion(
                 TipoAtaque.CHOQUE.getTextura(), 
-		        TipoAtaque.CHOQUE.getCordX1(), 
-                TipoAtaque.CHOQUE.getCordY1(),
-		        TipoAtaque.CHOQUE.getLargura1(), 
-                TipoAtaque.CHOQUE.getAltura1()), 
+		        TipoAtaque.CHOQUE.getCordX(), 
+                TipoAtaque.CHOQUE.getCordY(),
+		        TipoAtaque.CHOQUE.getLargura(), 
+                TipoAtaque.CHOQUE.getAltura()), 
 		    new Vector2(0.05f, 0.5f), 0, 0, 
-            TipoAtaque.CHOQUE, -5
+            TipoAtaque.CHOQUE, -5, false
         );
         spark = new Spark(texturaSpark, ataqueSpark);
         inimigos.add(spark);
@@ -313,7 +313,7 @@ public class Jogo extends Game {
     private void determinarPosicoesValidas(){
         posicoesValidas.clear();
         Random random = new Random();
-        for(int i=0; i<3; i++){
+        for(int i=0; i<10; i++){
             for(Rectangle plataforma : mapa.getChaos()){
                 float posYplataforma = plataforma.y + plataforma.height + 150;
                 float posXplataforma = random.nextFloat() * ((plataforma.x + plataforma.width) - plataforma.x) + plataforma.x;
@@ -477,6 +477,7 @@ public class Jogo extends Game {
             Personagem personagem = personagens.next();
             for(int i=0; i < personagem.getAtaquesAtivos().size(); i++){
                 personagem.getAtaquesAtivos().get(i).disparar();
+                //personagem.getAtaquesAtivos().remove(personagem.getAtaquesAtivos().get(i));
             }
         }
         personagens.reset();

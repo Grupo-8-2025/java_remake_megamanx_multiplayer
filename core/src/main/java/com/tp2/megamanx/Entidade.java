@@ -75,25 +75,12 @@ public class Entidade {
 		region.setRegion(cordX, cordY, largura, altura);
 		boolean flipou = region.isFlipX();
 
-		if(paraDireita == flipou) {
+		if(paraDireita != flipou) {
 			region.flip(true, false);
 		}
 
 		corpo.setRegion(region);
 	}
-
-	/* 
-	protected void setRegion(int cordX, int cordY, int largura, int altura) {
-        region.setRegion(cordX, cordY, largura, altura);
-
-        boolean flipou = region.isFlipX();
-        if(paraDireita != flipou) {
-            region.flip(true, false);
-        }
-
-        corpo.setRegion(region);
-    }
-	*/
 
 	public void setPosicao(float posX, float posY) {
 		setPosX(posX);
