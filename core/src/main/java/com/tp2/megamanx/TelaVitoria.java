@@ -8,21 +8,12 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.SpriteBatch;
 import com.badlogic.gdx.graphics.glutils.ShapeRenderer;
 import com.badlogic.gdx.graphics.Color;
-import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 
-/**
- * Tela exibida quando o jogador vence o jogo.
- * Permite reiniciar o jogo ou voltar para a tela inicial.
- */
 public class TelaVitoria implements Screen {
-    // Referência para o jogo principal
     private Jogo jogo;
-    // Responsável por desenhar sprites na tela
     private SpriteBatch batch;
-    // Responsável por desenhar formas geométricas (usado nos botões)
     private ShapeRenderer shapeRenderer;
-    // Imagem de fundo da tela de vitória
     private Texture imgFundo;
     // Fonte para desenhar textos
     private BitmapFont font;
@@ -30,19 +21,13 @@ public class TelaVitoria implements Screen {
     private FreeTypeFontGenerator fontGenerator;
     // Parâmetros para geração da fonte
     private FreeTypeFontGenerator.FreeTypeFontParameter fontParameter;
-    // Botão para jogar novamente e voltar ao início
     private Botao botaoJogarNovamente, botaoInicio;
 
-    /**
-     * Construtor da tela de vitória.
-     * Inicializa recursos gráficos, fonte e botões.
-     * @param jogo Referência para o jogo principal
-     */
     public TelaVitoria(Jogo jogo) {
         this.jogo = jogo;
-        batch = new SpriteBatch(); // Inicializa batch para desenhar sprites
-        shapeRenderer = new ShapeRenderer(); // Inicializa shapeRenderer para desenhar botões
-        imgFundo = new Texture("imagens/TelaInicial/Mega_Man_X_Logo.png"); // Imagem de fundo
+        batch = new SpriteBatch(); 
+        shapeRenderer = new ShapeRenderer();
+        imgFundo = new Texture("assets/imagens/Mega_Man_X_Logo.png"); 
 
         // Configuração da fonte personalizada
         fontGenerator = new FreeTypeFontGenerator(Gdx.files.internal("font.ttf"));
@@ -51,53 +36,44 @@ public class TelaVitoria implements Screen {
         fontParameter.color = Color.WHITE;
         font = fontGenerator.generateFont(fontParameter);
 
-        // Inicializa botões com posição, tamanho, texto e cores
         botaoJogarNovamente = new Botao(300, 250, 280, 40, "Jogar Novamente", Color.DARK_GRAY, Color.BLUE, Color.WHITE);
         botaoInicio = new Botao(300, 140, 280, 40, "Voltar para o Início", Color.DARK_GRAY, Color.BLUE, Color.WHITE);
     }
 
-    /**
-     * Método chamado a cada frame para desenhar e atualizar a tela.
-     * @param delta Tempo desde o último frame
-     */
     @Override
     public void render(float delta) {
-        // Limpa a tela com cor preta
         Gdx.gl.glClearColor(0,0,0,1);
         Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
 
-        // Desenha imagem de fundo e texto de vitória
         batch.begin();
         batch.draw(imgFundo, 0, 350);
-        font.draw(batch, "PARABENS VOCÊ GANHOU", 350, 400);
+        font.draw(batch, "Parabéns! Você ganhou", 350, 400);
         batch.end();
 
-        // Desenha botões na tela
         botaoJogarNovamente.desenhar(shapeRenderer, batch, font);
         botaoInicio.desenhar(shapeRenderer, batch, font);
 
-        // Verifica se o botão "Jogar Novamente" foi clicado
         if (botaoJogarNovamente.foiClicado()) {
-            jogo.reset(); // Reinicia o jogo
-            jogo.setScreen(null); // Volta para o jogo
+            jogo.reset();
+            jogo.setSegundaFaseAtivada(false);
+            jogo.setJogoIniciado(true);
+            jogo.setScreen(null);
         }
-        // Verifica se o botão "Voltar para o Início" foi clicado
+
         if (botaoInicio.foiClicado()) {
-            jogo.reset(); // Reinicia o jogo
-            jogo.setScreen(new TelaInicial(jogo)); // Vai para tela inicial
+            jogo.reset(); 
+            jogo.setSegundaFaseAtivada(false);
+            jogo.setScreen(new TelaInicial(jogo)); 
         }
+
     }
 
-    // Métodos obrigatórios da interface Screen (não utilizados nesta tela)
     @Override public void resize(int width, int height) {}
     @Override public void show() {}
     @Override public void hide() {}
     @Override public void pause() {}
     @Override public void resume() {}
 
-    /**
-     * Libera recursos gráficos utilizados pela tela
-     */
     @Override
     public void dispose() {
         batch.dispose();
@@ -106,4 +82,5 @@ public class TelaVitoria implements Screen {
         font.dispose();
         fontGenerator.dispose();
     }
+    
 }

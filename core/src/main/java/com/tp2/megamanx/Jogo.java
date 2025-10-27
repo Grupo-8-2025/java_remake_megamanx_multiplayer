@@ -1,13 +1,19 @@
 package com.tp2.megamanx;
 
-// Importações dos iteradores personalizados para gerenciamento de inimigos e personagens
 import com.tp2.megamanx.Iterators.InimigoIterator;
 import com.tp2.megamanx.Iterators.PersonagemIterator;
+import com.tp2.megamanx.inimigos.Hogamer;
+import com.tp2.megamanx.inimigos.Inimigo;
+import com.tp2.megamanx.inimigos.Pinguim;
+import com.tp2.megamanx.inimigos.Trower;
+import com.tp2.megamanx.inimigos.Vile;
+import com.tp2.megamanx.inimigos.Voador;
+import com.tp2.megamanx.inimigos.Walking;
+import com.tp2.megamanx.inimigos.Spark;
 
 import java.util.Random;
 import java.util.ArrayList;
 
-// Importações do framework LibGDX para desenvolvimento de jogos
 import com.badlogic.gdx.Game;
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Color;
@@ -25,19 +31,25 @@ import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.audio.Sound;
 
-/**
- * Classe principal do jogo Mega Man X
- * Estende a classe Game do LibGDX e gerencia toda a lógica do jogo
- * Responsável por controlar o loop principal, renderização, colisões e estados do jogo
- */
 public class Jogo extends Game {
 
-    // Texturas dos personagens principais e elementos visuais
-    private Texture texturaMegaMan;      // Textura do personagem jogável Mega Man
-    private Texture texturaPenguin;      // Textura do chefe Penguin
-    private Texture texturaTrower;       // Textura do inimigo Trower
-    private Texture texturaJaminger;     // Textura do inimigo Jaminger
-    private Texture texturaFundo;        // Textura do fundo do jogo
+    private boolean jogoIniciado = false; 
+    //private boolean objetosCriados = false; 
+
+    // Texturas das duas fases
+    private Texture texturaMegaMan;      
+    private Texture texturaVoador; 
+    
+    // Texturas da Fase 1
+    private Texture texturaPenguin;            
+    private Texture texturaTrower;
+    private Texture texturaFundo;       
+
+    // Texturas da Fase 2
+    private Texture texturaWalking; 
+    private Texture texturaHogamer;
+    private Texture texturaVile;
+    private Texture texturaSpark;  
 
     // Componentes de renderização e câmera
     private SpriteBatch batch;                    // Responsável por desenhar texturas na tela
@@ -46,164 +58,251 @@ public class Jogo extends Game {
     private Viewport viewport;                    // Gerencia diferentes resoluções de tela
     
     // Componentes de fonte e texto
-    private BitmapFont fonteVida;                 // Fonte para exibir informações de vida
-    private FreeTypeFontGenerator gerador;        // Gerador de fontes TTF
-    private FreeTypeFontGenerator.FreeTypeFontParameter parametro; // Parâmetros da fonte
+    private BitmapFont fonteVida;                                   // Fonte para exibir informações de vida
+    private FreeTypeFontGenerator gerador;                          // Gerador de fontes TTF
+    private FreeTypeFontGenerator.FreeTypeFontParameter parametro;  // Parâmetros da fonte
 
-    // Geração aleatória de posições para inimigos
-    private ArrayList<Vector2> posicoesValidas;   // Lista de posições válidas para spawn de inimigos
-    private Random random;                        // Gerador de números aleatórios
+    private ArrayList<Vector2> posicoesValidas;   
+    private Random random;                        
 
-    // Mapa do jogo
-    private Mapa mapa;                           // Instância do mapa carregado do arquivo TMX
+    private Mapa mapa;                           
 
-    // Gerenciadores e coleções de entidades
-    private GerenciadorColisoes gerenciadorColisoes; // Gerencia todas as colisões do jogo
-    private InimigoIterator inimigos;                 // Iterator para percorrer lista de inimigos
-    private PersonagemIterator personagens;           // Iterator para percorrer lista de personagens
+    private GerenciadorColisoes gerenciadorColisoes; 
+    private InimigoIterator inimigos;                 
+    private PersonagemIterator personagens;          
 
-    // Personagens principais
-    private MegaMan megaMan;          // Personagem principal jogável
-    private int vidasMegaMan = 3;     // Número de vidas restantes do Mega Man
-    private boolean gameOver = false; // Flag indicando se o jogo terminou
-    private Pinguim penguin;          // Chefe principal do jogo
+    private MegaMan megaMan;          
+    private MegaMan remoteMegaMan;
+    private int vidasMegaMan = 3;     
+    //private boolean gameOver = false; 
+    private Pinguim penguin;         
 
-    // Efeitos sonoros
-    private Sound somMorte, somVitoria, somPadrao; // Sons de morte, vitória e música de fundo
-    private boolean somPadraoTocando = false;      // Estado do som de fundo
+    // Segunda Fase
+    private boolean segundaFaseAtivada = false; 
+    private Vile vile;
+    private Spark spark;
 
-    // Renderização de formas geométricas (barras de vida)
+    private Sound somMorte, somVitoria, somPadrao; 
+    private boolean somPadraoTocando = false;      
+
     private ShapeRenderer shapeRenderer;
 
-    /**
-     * Método chamado na inicialização do jogo
-     * Configura a tela inicial e cria todos os objetos necessários
-     */
+    // Gerenciamento de rede
+    private NetworkManager networkManager;  // Gerencia a comunicação em rede
+    private boolean isServer = false;       // Indica se esta instância é o servidor
+    private boolean isMultiplayer = false;  // Indica se o jogo está em modo multiplayer
+    
+
     @Override
     public void create() {
-        setScreen(new TelaInicial(this)); // Exibe tela inicial
-        criaObjetosJogo();                // Inicializa todos os componentes do jogo
+        setScreen(new TelaInicial(this)); 
+        criaObjetosJogo();
     }
 
-    /**
-     * Método responsável por criar e inicializar todos os objetos do jogo
-     * Configura câmera, renderizadores, fontes, sons e entidades
-     */
     private void criaObjetosJogo(){
-        batch = new SpriteBatch();                    // Cria o SpriteBatch para desenhar texturas
-        camera = new OrthographicCamera();            // Cria câmera ortográfica para visão 2D
-        cameraFoco = new Vector2();                   // Inicializa o ponto de foco da câmera
-        camera.setToOrtho(false, 800, 600);           // Configura câmera com resolução 800x600
-        viewport = new FillViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()); // Viewport adaptável
-        shapeRenderer = new ShapeRenderer();          // Renderizador para formas geométricas
+        batch = new SpriteBatch();                    
+        camera = new OrthographicCamera();            
+        cameraFoco = new Vector2();                   
+        camera.setToOrtho(false, 800, 600);           
+        viewport = new FillViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()); 
+        shapeRenderer = new ShapeRenderer();          
         
-        // Configuração da fonte para exibir textos
-        gerador = new FreeTypeFontGenerator(Gdx.files.internal("font.ttf")); // Carrega arquivo de fonte
-        parametro = new FreeTypeFontGenerator.FreeTypeFontParameter();        // Cria parâmetros da fonte
-        parametro.size = 24;                          // Define tamanho da fonte
-        parametro.color = Color.WHITE;                // Define cor branca para a fonte
-        fonteVida = gerador.generateFont(parametro);  // Gera a fonte com os parâmetros definidos
-        gerador.dispose();                            // Libera recursos do gerador
+        gerador = new FreeTypeFontGenerator(Gdx.files.internal("assets/GAMERIA.ttf")); 
+        parametro = new FreeTypeFontGenerator.FreeTypeFontParameter();        
+        parametro.size = 24;                         
+        parametro.color = Color.WHITE;               
+        fonteVida = gerador.generateFont(parametro);  
+        gerador.dispose();                            
 
-        // Carregamento dos efeitos sonoros
-        somMorte = Gdx.audio.newSound(Gdx.files.internal("sons/megaman-x-death-sound-effect.mp3"));
-        somVitoria = Gdx.audio.newSound(Gdx.files.internal("sons/mmx-stage-clear.mp3"));
-        somPadrao = Gdx.audio.newSound(Gdx.files.internal("sons/mega-man-x2-snes-music-first-stage-audiotrimmer.mp3"));
+        somMorte = Gdx.audio.newSound(Gdx.files.internal("assets/sons/megaman-x-death-sound-effect.mp3"));
+        somVitoria = Gdx.audio.newSound(Gdx.files.internal("assets/sons/mmx-stage-clear.mp3"));
+        somPadrao = Gdx.audio.newSound(Gdx.files.internal("assets/sons/mega-man-x2-snes-music-first-stage-audiotrimmer.mp3"));
 
-        random = new Random();                        // Gerador de números aleatórios
-        posicoesValidas = new ArrayList<>();          // Lista para armazenar posições válidas
+        random = new Random();                       
+        posicoesValidas = new ArrayList<>();          
 
-        gerenciadorColisoes = new GerenciadorColisoes(); // Gerenciador de colisões
-        inimigos = new InimigoIterator();                 // Iterator para inimigos
-        personagens = new PersonagemIterator();           // Iterator para personagens
+        gerenciadorColisoes = new GerenciadorColisoes(); 
+        inimigos = new InimigoIterator();                
+        personagens = new PersonagemIterator();           
 
-        carregaTexturas();  // Carrega todas as texturas necessárias
-        criaMapa();         // Cria e configura o mapa do jogo
-        criaPersonagens();  // Cria todos os personagens do jogo
+        carregaTexturas();  
+        criaMapa();         
+        criaPersonagens(segundaFaseAtivada);  
+
         somPadrao.play(somPadrao.loop()); // Inicia a música de fundo em loop
         somPadraoTocando = true;
-        somPadrao.play(somPadrao.loop()); // Inicia a música de fundo em loop
+        if (isMultiplayer && networkManager == null) {
+            iniciaMultiplayer(); // Inicializa o modo multiplayer se ativado
+        }
     }
 
-    /**
-     * Cria e configura o mapa do jogo
-     * Carrega o arquivo TMX do mapa com as dimensões especificadas
-     */
+    private void iniciaMultiplayer() {
+        if (isMultiplayer) {
+            System.out.println(isServer);
+            networkManager = new NetworkManager(this, isServer); // Inicializa o gerenciador de rede
+        }
+    }
+
     private void criaMapa(){
-        mapa = new Mapa("maps/Mapa.tmx", 800, 600);
+        mapa = new Mapa("assets/maps/Mapa.tmx", 800, 600);
     }
 
-    /**
-     * Carrega todas as texturas necessárias para o jogo
-     * Inclui texturas dos personagens, inimigos e elementos visuais
-     */
     private void carregaTexturas(){
-        TipoAtaque.carregarTodasTexturas();                                           // Carrega texturas dos ataques
-        texturaMegaMan = new Texture("imagens/MegaMan/megaMan.png");                 // Textura do Mega Man
-        texturaPenguin = new Texture("imagens/ChilPenguin/inimigos/Penguin/penguin.png"); // Textura do Penguin
-        texturaTrower = new Texture("imagens/ChilPenguin/inimigos/now.png");         // Textura do Trower
-        texturaJaminger = new Texture("imagens/ChilPenguin/inimigos/jaminger.png");  // Textura do Jaminger
-        texturaFundo = new Texture("fundos/cena-de-pixels-graficos-de-8-bits-com-montanhas.jpg"); // Fundo do jogo
+        TipoAtaque.carregarTodasTexturas();    
+        texturaFundo = new Texture("assets/fundos/cena-de-pixels-graficos-de-8-bits-com-montanhas.jpg"); 
+                                 
+        texturaMegaMan = new Texture("assets/imagens/MegaMan/mega_man.png"); 
+        texturaVoador = new Texture("assets/imagens/Fase1/bee.png");    
+        texturaHogamer = new Texture("assets/imagens/Fase2/hogamer.png");
+
+        texturaPenguin = new Texture("assets/imagens/Fase1/penguin.png");
+        texturaTrower = new Texture("assets/imagens/Fase1/now.png"); 
     }
 
-    /**
-     * Cria todos os personagens do jogo, incluindo MegaMan e inimigos
-     */
-    private void criaPersonagens(){
-        criarInimigos();
-        megaMan = new MegaMan(texturaMegaMan, 330, 2517); // Cria o MegaMan na posição inicial
-        personagens.add(megaMan);                         // Adiciona MegaMan à lista de personagens
-        personagens.add(penguin);                         // Adiciona o chefe Penguin
+    private void carregarTexturasFase2(){
+        if (texturaWalking == null) {
+            texturaWalking = new Texture("assets/imagens/Fase2/walking.png"); 
+        }
+        if (texturaVile == null) {
+            texturaVile = new Texture("assets/imagens/Fase2/vile.png");
+        }
+        if (texturaSpark == null) {
+            texturaSpark = new Texture("assets/imagens/Fase2/spark.png");
+        }
     }
 
-    /**
-     * Cria e posiciona todos os inimigos do jogo
-     * Sorteia posições válidas e alterna entre tipos de inimigos
-     */
-    private void criarInimigos(){
-        penguin = new Pinguim(texturaPenguin, 11635, 3000); // Cria o chefe Penguin
-        inimigos.add(penguin);
+    private void criaPersonagens(boolean segundaFaseAtivada){
+        criarInimigos(segundaFaseAtivada);
+        megaMan = new MegaMan(texturaMegaMan,  330, 2517); 
+        personagens.add(megaMan);      
         
-        // Cria ataques padrões para inimigos
-        Ataque ataqueTrower = new Ataque(new TextureRegion(TipoAtaque.BOLA_NEVE.getTextura(), 
-		TipoAtaque.BOLA_NEVE.getCordX1(), TipoAtaque.BOLA_NEVE.getCordY1(),
-		TipoAtaque.BOLA_NEVE.getLargura1(), TipoAtaque.BOLA_NEVE.getAltura1()), 
-		0, 0, new Vector2(0.05f, 0.5f), TipoAtaque.BOLA_NEVE, -5);
+        if(!segundaFaseAtivada){
+            if (penguin != null) personagens.add(penguin); 
+        }                     
 
-        Ataque ataqueJaminger = new Ataque(new TextureRegion(TipoAtaque.DISCO.getTextura(), 
-		TipoAtaque.DISCO.getCordX1(), TipoAtaque.DISCO.getCordY1(),
-		TipoAtaque.DISCO.getLargura1(), TipoAtaque.DISCO.getAltura1()), 
-		0, 0, new Vector2(0.05f, 0.5f), TipoAtaque.DISCO, -5);
+        if (segundaFaseAtivada) {
+            if (vile != null) personagens.add(vile); 
+            if (spark != null) personagens.add(spark);                    
+        }
+    }
+
+    private void criarTrower(int indexPosicao){
+        Ataque ataqueTrower = new Ataque(
+            new TextureRegion(
+                TipoAtaque.BOLA_NEVE.getTextura(), 
+		        TipoAtaque.BOLA_NEVE.getCordX(), 
+                TipoAtaque.BOLA_NEVE.getCordY(),
+		        TipoAtaque.BOLA_NEVE.getLargura(), 
+                TipoAtaque.BOLA_NEVE.getAltura()
+            ), 
+		    new Vector2(0.05f, 0.5f), 0, 0, 
+            TipoAtaque.BOLA_NEVE, -5, false
+        );
+
+        Trower trower = new Trower(texturaTrower, ataqueTrower);
+
+        float posX = posicoesValidas.get(indexPosicao).x - trower.getCorpo().getBoundingRectangle().width;
+        float posY = posicoesValidas.get(indexPosicao).y;
+        
+        trower.setPosicao(posX, posY);
+        inimigos.add(trower);
+        personagens.add(trower);
+    }
+
+    private void criarWalking(int indexPosicao){
+        Walking walking = new Walking(texturaWalking);
+
+        float posX = posicoesValidas.get(indexPosicao).x + walking.getCorpo().getBoundingRectangle().width;
+        float posY = posicoesValidas.get(indexPosicao).y;
+        walking.setPosicao(posX, posY);
+
+        inimigos.add(walking);
+        personagens.add(walking);
+    }
+
+    private void criarVoador(int indexPosicao){
+        Voador voador = new Voador(texturaVoador);
+
+        float posX = posicoesValidas.get(indexPosicao).x - voador.getCorpo().getBoundingRectangle().width;
+        float posY = posicoesValidas.get(indexPosicao).y;
+        
+        voador.setPosicao(posX, posY);
+        inimigos.add(voador);
+        personagens.add(voador);
+    }
+
+    private void criarHogamer(int indexPosicao){
+        Hogamer hogamer = new Hogamer(texturaHogamer);
+
+        float posX = posicoesValidas.get(indexPosicao).x + hogamer.getCorpo().getBoundingRectangle().width;
+        float posY = posicoesValidas.get(indexPosicao).y + hogamer.getCorpo().getBoundingRectangle().height;
+        
+        hogamer.setPosicao(posX, posY);
+        inimigos.add(hogamer);
+        personagens.add(hogamer);
+    }
+
+    private void criarVile(){
+        Ataque ataqueVile = new Ataque(
+            new TextureRegion(
+                TipoAtaque.BOMBA.getTextura(), 
+		        TipoAtaque.BOMBA.getCordX(), 
+                TipoAtaque.BOMBA.getCordY(),
+		        TipoAtaque.BOMBA.getLargura(), 
+                TipoAtaque.BOMBA.getAltura()), 
+		    new Vector2(0.05f, 0.5f), 0, 0, 
+            TipoAtaque.BOMBA, -5, false
+        );
+        vile = new Vile(texturaVile, ataqueVile);
+        inimigos.add(vile);
+    }
+
+    private void criarSpark(){
+        Ataque ataqueSpark = new Ataque(
+            new TextureRegion(
+                TipoAtaque.CHOQUE.getTextura(), 
+		        TipoAtaque.CHOQUE.getCordX(), 
+                TipoAtaque.CHOQUE.getCordY(),
+		        TipoAtaque.CHOQUE.getLargura(), 
+                TipoAtaque.CHOQUE.getAltura()), 
+		    new Vector2(0.05f, 0.5f), 0, 0, 
+            TipoAtaque.CHOQUE, -5, false
+        );
+        spark = new Spark(texturaSpark, ataqueSpark);
+        inimigos.add(spark);
+    }
+
+    private void criarInimigos(boolean segundaFaseAtivada){
+        if(!segundaFaseAtivada){
+            penguin = new Pinguim(texturaPenguin); 
+            inimigos.add(penguin);
+        }else if (segundaFaseAtivada) {
+            criarVile();
+            criarSpark();
+        }
             
-        determinarPosicoesValidas(); // Calcula posições válidas para spawn
+        determinarPosicoesValidas(); 
 
         int indexPosicaoAnterior = -1;
-        for(int i=0; i<15; i++){
+        for(int i=0; i<20; i++){
             int indexPosicao = random.nextInt(posicoesValidas.size());
 
             // Garante espaçamento mínimo entre inimigos
-            if(indexPosicaoAnterior == -1 || Math.abs(posicoesValidas.get(indexPosicao).x - posicoesValidas.get(indexPosicaoAnterior).x) > 800){
-                int sortearPersonagem = random.nextInt(2);
+            if(indexPosicaoAnterior == -1 || Math.abs(posicoesValidas.get(indexPosicao).x - posicoesValidas.get(indexPosicaoAnterior).x) > 350){
+                int sortearPersonagem = random.nextInt(3);
                 if(sortearPersonagem == 0){
-                    Jaminger jaminger = new Jaminger(texturaJaminger, 0, 
-                    0, ataqueJaminger, 0, 5);
-
-                    float posX = posicoesValidas.get(indexPosicao).x + jaminger.getCorpo().getBoundingRectangle().width;
-                    float posY = posicoesValidas.get(indexPosicao).y;
-                    jaminger.setPosicao(posX, posY);
-
-                    inimigos.add(jaminger);
-                    personagens.add(jaminger);
-                }else{
-                    Trower trower = new Trower(texturaTrower, 0, 
-                    0, ataqueTrower, 0, 5);
-
-                    float posX = posicoesValidas.get(indexPosicao).x - trower.getCorpo().getBoundingRectangle().width;
-                    float posY = posicoesValidas.get(indexPosicao).y;
-                    
-                    trower.setPosicao(posX, posY);
-                    inimigos.add(trower);
-                    personagens.add(trower);
+                    if(!segundaFaseAtivada){
+                        criarTrower(indexPosicao);
+                    }
+                    if(segundaFaseAtivada){
+                        criarWalking(indexPosicao);
+                    }
+                }
+                if(sortearPersonagem == 1){
+                    criarVoador(indexPosicao);
+                }
+                if(sortearPersonagem == 2){
+                    criarHogamer(indexPosicao);
                 }
             }
             indexPosicaoAnterior = indexPosicao;
@@ -211,122 +310,179 @@ public class Jogo extends Game {
         
     }
 
-    /**
-     * Determina todas as posições válidas para spawn de inimigos com base nas plataformas do mapa
-     */
     private void determinarPosicoesValidas(){
-    posicoesValidas.clear();
-    for(Rectangle plataforma : mapa.getChaos()){
-            float posYplataforma = plataforma.y + plataforma.height;
-            float posXplataforma = plataforma.x + plataforma.width;
-            posicoesValidas.add(new Vector2(posXplataforma, posYplataforma));
-    }
-    System.out.println("Posições válidas encontradas: " + posicoesValidas.size());
-}
-
-    /**
-     * Loop principal de renderização do jogo
-     * Atualiza câmera, limpa tela, processa lógica de jogo e desenha elementos
-     */
-    @Override
-    public void render() {
-        // Atualiza o foco da câmera para seguir o MegaMan
-        cameraFoco.set(megaMan.getPosX() + megaMan.getCorpo().getBoundingRectangle().width, 
-        megaMan.getPosY() + (megaMan.getCorpo().getBoundingRectangle().height/2));
-        camera.position.set(cameraFoco, 0);
-        camera.update();
-        batch.setProjectionMatrix(camera.combined); 
-        
-        // Limpa a tela com cor branca
-        Gdx.gl.glClearColor(255f, 255f, 255f, 1);
-        Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
-
-        // Se o MegaMan não morreu, processa lógica de ataques, atualização e colisões
-        if(!megaMan.isMorreu()){
-            ataquesPersonagens();
-            atualizarPersonagens();
-            colisoes();
-        }
-
-        mutaSomFundo(); // Verifica input para mutar/desmutar som de fundo
-        desenhaItens(); // Desenha todos os elementos visuais
-        super.render(); // Chama renderização padrão do LibGDX
-    }
-
-    /* Muta o som de fundo */
-    private void mutaSomFundo(){
-        if(Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.M) && Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT)){ // Tecla M para mutar/desmutar
-            if(somPadraoTocando){ // Se o som está tocando, pausa
-                somPadrao.pause();
-                somPadraoTocando = false; // Atualiza estado para pausado
-            } else {
-                somPadrao.play(somPadrao.loop());
-                somPadraoTocando = true; // Atualiza estado para tocando
+        posicoesValidas.clear();
+        Random random = new Random();
+        for(int i=0; i<10; i++){
+            for(Rectangle plataforma : mapa.getChaos()){
+                float posYplataforma = plataforma.y + plataforma.height + 150;
+                float posXplataforma = random.nextFloat() * ((plataforma.x + plataforma.width) - plataforma.x) + plataforma.x;
+                posicoesValidas.add(new Vector2(posXplataforma, posYplataforma));
             }
         }
     }
 
-    /**
-     * Atualiza todos os personagens do jogo
-     * Move, executa ataques, verifica mortes e troca de telas
-     */
+    @Override
+    public void render() {
+        if (jogoIniciado) {
+
+            //if (objetosCriados == false) {
+               // criaObjetosJogo(); 
+               // objetosCriados = true; 
+                if (isMultiplayer && remoteMegaMan == null) {
+                    remoteMegaMan = new MegaMan(texturaMegaMan, 0, 0); 
+                }
+           // }
+
+            cameraFoco.set(megaMan.getPosX() + megaMan.getCorpo().getBoundingRectangle().width, 
+            megaMan.getPosY() + (megaMan.getCorpo().getBoundingRectangle().height/2));
+            camera.position.set(cameraFoco, 0);
+            camera.update();
+            batch.setProjectionMatrix(camera.combined); 
+            
+            Gdx.gl.glClearColor(255f, 255f, 255f, 1);
+            Gdx.gl.glClear(GL20.GL_COLOR_BUFFER_BIT);
+
+            controleFases();
+
+            if(vidasMegaMan > 0){
+                atualizarPersonagens();
+                colisoes();
+            }
+
+            // Envia a posição do jogador local e atualiza a posição do jogador remoto
+            if (isMultiplayer && networkManager != null) {
+                networkManager.sendPlayerPosition(megaMan.getPosX(), megaMan.getPosY(), isServer ? 0 : 1); // ID 0 para servidor, 1 para cliente
+                if (isServer) {
+                    networkManager.sendEnemyPositions(); // Envia posições dos inimigos se for servidor
+                }
+            }
+
+            mutaSomFundo(); 
+            desenhaItens(); 
+        }
+        super.render(); 
+    }
+
+    private void mutaSomFundo(){
+        if(Gdx.input.isKeyJustPressed(com.badlogic.gdx.Input.Keys.M) && Gdx.input.isKeyPressed(com.badlogic.gdx.Input.Keys.SHIFT_LEFT)){ // Tecla M para mutar/desmutar
+            if(somPadraoTocando){ 
+                somPadrao.pause();
+                somPadraoTocando = false; 
+            } else {
+                somPadrao.play(somPadrao.loop());
+                somPadraoTocando = true; 
+            }
+        }
+    }
+
+    private void controleFases(){
+        if(!segundaFaseAtivada){
+            if(penguin != null & penguin.getVida() <= 0){
+                iniciarSegundaFase();
+            }
+        }
+        
+        if(segundaFaseAtivada){
+            if(spark != null){
+                if(spark.getVida() <= 0){
+                    somVitoria.play();
+                    segundaFaseAtivada = false; 
+                    jogoIniciado = false;
+                    setScreen(new TelaVitoria(this));
+                }
+            }
+        }
+        
+        if (megaMan.isMorreu() && vidasMegaMan <= 0) {
+            somMorte.play();
+            segundaFaseAtivada = false; 
+            jogoIniciado = false;
+            setScreen(new TelaGameOver(this));
+            return;
+        }
+
+    }
+
+    private void iniciarSegundaFase(){
+        penguin = null;
+        megaMan = null;
+        remoteMegaMan = null;
+
+        
+        segundaFaseAtivada = true;
+
+        carregarTexturasFase2();
+
+        inimigos.clear();
+        personagens.clear();
+
+        criaPersonagens(segundaFaseAtivada);
+     }
+
     private void atualizarPersonagens(){
+        ataquesPersonagens();
+
+        megaMan.confereMortePorQueda(); 
+
+        if(megaMan.isMorreu() && vidasMegaMan > 0){
+            vidasMegaMan--;
+            megaMan.setVida(16);
+            megaMan.setPosicao(330, 2517);
+            megaMan.setMorreu(false);
+            criarInimigos(segundaFaseAtivada);
+        }
+
+        if(vidasMegaMan <= 0){
+            megaMan.setMorreu(true);
+        }
+
+        if(!segundaFaseAtivada){
+            if (penguin != null) penguin.atualizar();
+        } 
+
+        if (segundaFaseAtivada) {
+            if (vile != null) vile.atualizar();
+            if (spark != null) spark.atualizar();
+
+            if (vile != null && vile.getVida() <= 0) {
+                vile.morrer();
+            }
+            if (spark != null && spark.getVida() <= 0) {
+                spark.morrer();
+            }
+        }
+
         personagens.reset();
         while (personagens.hasNext()) {
             Personagem personagem = personagens.next();
             personagem.mover();
             personagem.atacar();
             personagem.morrer();
-            // Se o chefe morreu, exibe tela de vitória
-            if(penguin.getVida() <= 0){
-                somVitoria.play();
-                setScreen(new TelaVitoria(this));
-            }
-            // Se o MegaMan morreu, processa vidas e game over
-            if (megaMan.isMorreu() && !gameOver) {
-                somMorte.play();
-                vidasMegaMan--;
-                if (vidasMegaMan > 0) {
-                    dispose();
-                    criaObjetosJogo();
-                    gameOver = false;
-                } else {
-                    gameOver = true;
-                    setScreen(new TelaGameOver(this));
-                }
-            }
-            megaMan.confereMortePorQueda(); // Verifica se MegaMan caiu do mapa
         }
         personagens.reset();
 
-        // Atualiza posição do MegaMan para todos os inimigos
         inimigos.reset();
         while (inimigos.hasNext()) {
             Inimigo inimigo = inimigos.next();
-            inimigo.setPosXmegaMan(megaMan.getPosX());
+            inimigo.setPosicaoMegaMan(new Vector2(megaMan.getPosX(), megaMan.getPosY()));
         }
         inimigos.reset();
 
-        penguin.atualizar(); // Atualiza lógica do chefe
     }
 
-    /**
-     * Atualiza e dispara todos os ataques ativos dos personagens
-     */
     private void ataquesPersonagens(){
         personagens.reset();
         while (personagens.hasNext()) {
             Personagem personagem = personagens.next();
             for(int i=0; i < personagem.getAtaquesAtivos().size(); i++){
                 personagem.getAtaquesAtivos().get(i).disparar();
+                //personagem.getAtaquesAtivos().remove(personagem.getAtaquesAtivos().get(i));
             }
         }
         personagens.reset();
     }
 
-    /**
-     * Gerencia todas as colisões do jogo (personagens, plataformas, ataques, inimigos)
-     */
     private void colisoes() {
 
         gerenciadorColisoes.colisaoPersonagensPlataformas(mapa.getRetangulosColisao(), personagens);
@@ -360,16 +516,7 @@ public class Jogo extends Game {
         personagens.reset();
     }
 
-    /**
-     * Desenha as barras de vida do MegaMan e do chefe Penguin na tela
-     * Inclui lógica para exibir barra do chefe apenas quando próximo
-     */
-    private void desenharVida() {
-        float larguraBarra = 20;
-        float alturaBarra = 200;
-        float margem = 30;
-        float borda = 4;
-
+    private void desenhaVidaMegaMan(float larguraBarra, float alturaBarra, float margem, float borda){
         float vidaMaxMegaMan = 16f;
         float vidaAtualMegaMan = megaMan.getVida();
         float proporcaoMegaMan = Math.max(vidaAtualMegaMan / vidaMaxMegaMan, 0);
@@ -389,79 +536,98 @@ public class Jogo extends Game {
         shapeRenderer.rect(barraMegaManX, barraMegaManY, larguraBarra, alturaBarra * proporcaoMegaMan);
 
         shapeRenderer.end();
+    }
 
-        // Exibe barra de vida do chefe apenas se estiver próximo do MegaMan
-        float distancia = megaMan.getCorpo().getBoundingRectangle().getCenter(new Vector2()).dst(
-            penguin.getCorpo().getBoundingRectangle().getCenter(new Vector2())
-        );
+    private void desenharVidas() {
+        float larguraBarra = 20;
+        float alturaBarra = 200;
+        float margem = 30;
+        float borda = 4;
+
+        desenhaVidaMegaMan(larguraBarra, alturaBarra, margem, borda);
+
+        float distancia = 0;
+        float vidaMaxBoss = 0;
+        float vidaAtualBoss = 0;
+
+        if(!segundaFaseAtivada && (penguin != null)){
+            distancia = megaMan.getCorpo().getBoundingRectangle().getCenter(new Vector2()).dst(
+                penguin.getCorpo().getBoundingRectangle().getCenter(new Vector2())
+            ); 
+            vidaMaxBoss = 32f;
+            vidaAtualBoss = penguin.getVida();
+        }
+        else if(segundaFaseAtivada && (spark != null)){
+            distancia = megaMan.getCorpo().getBoundingRectangle().getCenter(new Vector2()).dst(
+                spark.getCorpo().getBoundingRectangle().getCenter(new Vector2())
+            ); 
+            vidaMaxBoss = 40f;
+            vidaAtualBoss = spark.getVida();
+        }
+
         if (distancia < 600) {
-            float vidaMaxPenguin = 32f;
-            float vidaAtualPenguin = penguin.getVida();
-            float proporcaoPenguin = Math.max(vidaAtualPenguin / vidaMaxPenguin, 0);
+            float proporcaoPenguin = Math.max(vidaAtualBoss / vidaMaxBoss, 0);
 
-            float barraPenguinX = camera.position.x + camera.viewportWidth / 2 - margem - larguraBarra;
-            float barraPenguinY = camera.position.y - alturaBarra / 2;
+            float barraBossX = camera.position.x + camera.viewportWidth / 2 - margem - larguraBarra;
+            float barraBossY = camera.position.y - alturaBarra / 2;
 
             shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
             shapeRenderer.setColor(new Color(0, 0.1f, 0.5f, 1));
-            shapeRenderer.rect(barraPenguinX - borda, barraPenguinY - borda, larguraBarra + 2 * borda, alturaBarra + 2 * borda);
+            shapeRenderer.rect(barraBossX - borda, barraBossY - borda, larguraBarra + 2 * borda, alturaBarra + 2 * borda);
 
             shapeRenderer.setColor(Color.DARK_GRAY);
-            shapeRenderer.rect(barraPenguinX, barraPenguinY, larguraBarra, alturaBarra);
+            shapeRenderer.rect(barraBossX, barraBossY, larguraBarra, alturaBarra);
 
             shapeRenderer.setColor(Color.RED);
-            shapeRenderer.rect(barraPenguinX, barraPenguinY, larguraBarra, alturaBarra * proporcaoPenguin);
+            shapeRenderer.rect(barraBossX, barraBossY, larguraBarra, alturaBarra * proporcaoPenguin);
 
             shapeRenderer.end();
         }
+
     }
 
-    /**
-     * Desenha todos os elementos visuais do jogo (fundo, entidades, HUD)
-     */
     private void desenhaItens(){
         batch.begin();
-        // Desenha o fundo do jogo
         batch.draw(texturaFundo, camera.position.x - camera.viewportWidth / 2, camera.position.y - camera.viewportHeight / 2, camera.viewportWidth, camera.viewportHeight );
         batch.end();
-
-        // Renderiza o mapa
         mapa.render(camera);
 
         batch.begin();
-        desenharEntidades(); // Desenha personagens e ataques
-        // Exibe informações de vida no topo da tela
+        desenharEntidades(); 
+       
         fonteVida.draw(batch, "Vida MegaMan: " + megaMan.getVida(), camera.position.x - camera.viewportWidth / 2 + 20, camera.position.y + camera.viewportHeight / 2 - 20);
-        fonteVida.draw(batch, "Vida Penguin: " + penguin.getVida(), camera.position.x - camera.viewportWidth / 2 + 20, camera.position.y + camera.viewportHeight / 2 - 50);
-        desenharVida(); // Desenha barras de vida
+        
+        if(!segundaFaseAtivada && (penguin != null)){
+            fonteVida.draw(batch, "Vida Penguin: " + penguin.getVida(), camera.position.x - camera.viewportWidth / 2 + 20, camera.position.y + camera.viewportHeight / 2 - 50);
+        }
+        else if(segundaFaseAtivada && (spark != null)){
+            fonteVida.draw(batch, "Vida Spark: " + spark.getVida(), camera.position.x - camera.viewportWidth / 2 + 20, camera.position.y + camera.viewportHeight / 2 - 50);
+        }
+        
+        desenharVidas();
         batch.end();
         
-        // Opcional: desenha retângulos de colisão para debug
         shapeRenderer.setProjectionMatrix(camera.combined);
         shapeRenderer.begin(ShapeRenderer.ShapeType.Line);
         shapeRenderer.setColor(Color.RED);
-        // for (Rectangle r : mapa.getChaos()) {
-        //     shapeRenderer.rect(r.x, r.y, r.width, r.height);
-        // }
         shapeRenderer.end();
     }
 
-    /**
-     * Desenha todos os personagens e ataques ativos na tela
-     */
     private void desenharEntidades(){
-        desenharAtaques(); // Desenha todos os ataques ativos
+        desenharAtaques(); 
+
         personagens.reset();
         while (personagens.hasNext()) {
             Personagem personagem = personagens.next();
             personagem.draw(batch);
         }
         personagens.reset();
+
+        if (remoteMegaMan != null && (remoteMegaMan.getPosX() != 0 || remoteMegaMan.getPosY() != 0)) {
+            remoteMegaMan.draw(batch);
+        }
     }
 
-    /**
-     * Desenha todos os ataques ativos de todos os personagens
-     */
     private void desenharAtaques(){
         personagens.reset();
         while (personagens.hasNext()) {
@@ -473,30 +639,72 @@ public class Jogo extends Game {
         personagens.reset();
     }
 
-    /**
-     * Atualiza o viewport quando a janela é redimensionada
-     * @param width Nova largura da janela
-     * @param height Nova altura da janela
-     */
+    public void setJogoIniciado(boolean iniciado) {
+        this.jogoIniciado = iniciado;
+    }
+
+    // Define se esta instância do jogo é o servidor
+    public void setIsServer(boolean isServer) {
+        this.isServer = isServer;
+    }
+
+    public boolean getIsServer (){
+        return isServer;
+    }
+
+    // Define se o jogo está em modo multiplayer
+    public void setIsMultiplayer(boolean isMultiplayer) {
+        this.isMultiplayer = isMultiplayer;
+    }
+
+    public void setSegundaFaseAtivada(boolean ativada) {
+        this.segundaFaseAtivada = ativada;
+    }
+
     @Override
     public void resize(int width, int height) {
-        viewport.update(width, height);
+        if (viewport != null) {
+            viewport.update(width, height);
+        }
     }
 
-    /**
-     * Reinicia o jogo, restaurando vidas e resetando todos os objetos
-     */
     public void reset(){
         vidasMegaMan = 3;
-        gameOver = false;
+        segundaFaseAtivada = false;
         dispose();
-        create();
+        //create();
+        criaObjetosJogo();
     }
 
-    /**
-     * Libera todos os recursos gráficos e sonoros utilizados pelo jogo
-     * Evita vazamento de memória ao fechar ou reiniciar o jogo
-     */
+    public void updateRemotePlayer(PlayerPosition pos) {
+        if (remoteMegaMan != null) {
+            remoteMegaMan.setPosicao(pos.x, pos.y);
+        }
+    }
+
+    public EnemyPosition getEnemyPositions() {
+        EnemyPosition pos = new EnemyPosition(); // Inicializa listas vazias
+        inimigos.reset();
+        while (inimigos.hasNext()) {
+            Inimigo inimigo = inimigos.next();
+            pos.x.add(((Personagem) inimigo).getPosX()); // Adiciona posição X
+            pos.y.add(((Personagem) inimigo).getPosY()); // Adiciona posição Y
+            pos.ids.add(inimigo.hashCode()); // Adiciona ID
+        }
+        inimigos.reset(); 
+        return pos;
+    }
+
+    public void updateEnemies(EnemyPosition pos) {
+        if (!isServer) { // Apenas o cliente atualiza as posições dos inimigos
+            int numEnemies = Math.min(inimigos.getColecao().tamanho(), pos.x.size());
+            for (int i = 0; i < numEnemies; i++) {
+                Inimigo inimigo = inimigos.get(i);
+                ((Personagem) inimigo).setPosicao(pos.x.get(i), pos.y.get(i));
+            }
+        }
+    }
+
     @Override
     public void dispose() {
         if(mapa != null) {
@@ -506,20 +714,55 @@ public class Jogo extends Game {
             batch.dispose();
         }
         
-        somMorte.pause();
-        somMorte.dispose();
-        somPadrao.pause();
-        somPadrao.dispose();
-        somVitoria.pause();
-        somVitoria.dispose();
+        if (somMorte != null) {
+            somMorte.pause();
+            somMorte.dispose();
+        }
+        if (somPadrao != null) {
+            somPadrao.pause();
+            somPadrao.dispose();
+        }
+        if (somVitoria != null) {
+            somVitoria.pause();
+            somVitoria.dispose();
+        }
 
-        fonteVida.dispose();
+        if (fonteVida != null) {
+            fonteVida.dispose();
+        }
 
-        //TipoAtaque.disposeTodasTexturas();
-        texturaMegaMan.dispose();
-        texturaPenguin.dispose();
-        texturaTrower.dispose();
-        texturaJaminger.dispose();
+        TipoAtaque.disposeTodasTexturas();
+        if (texturaMegaMan != null) {
+            texturaMegaMan.dispose();
+        }
+        if (texturaVoador != null) {
+            texturaVoador.dispose();
+        }
+        if (texturaHogamer != null) {
+            texturaHogamer.dispose();
+        }
+        if (texturaFundo != null){
+            texturaFundo.dispose();
+        }
+        if (texturaPenguin != null) {
+            texturaPenguin.dispose();
+        }
+        if (texturaTrower != null) {
+            texturaTrower.dispose();
+        }
+        if (texturaWalking != null) {
+            texturaWalking.dispose();
+        }
+        if (texturaVile != null) {
+            texturaVile.dispose();
+        }
+        if (texturaSpark != null) {
+            texturaSpark.dispose();
+        }
+
+        if (networkManager != null) {
+            networkManager.dispose();
+        }
 
         super.dispose();
     }
