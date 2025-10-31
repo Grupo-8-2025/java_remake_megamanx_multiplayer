@@ -2,14 +2,14 @@ package com.tp2.megamanx;
 
 import com.tp2.megamanx.Iterators.InimigoIterator;
 import com.tp2.megamanx.Iterators.PersonagemIterator;
-import com.tp2.megamanx.inimigos.Hogamer;
-import com.tp2.megamanx.inimigos.Inimigo;
-import com.tp2.megamanx.inimigos.Pinguim;
-import com.tp2.megamanx.inimigos.Trower;
-import com.tp2.megamanx.inimigos.Vile;
-import com.tp2.megamanx.inimigos.Voador;
-import com.tp2.megamanx.inimigos.Walking;
-import com.tp2.megamanx.inimigos.Spark;
+import com.tp2.megamanx.Inimigos.Hogamer;
+import com.tp2.megamanx.Inimigos.Inimigo;
+import com.tp2.megamanx.Inimigos.Pinguim;
+import com.tp2.megamanx.Inimigos.Trower;
+import com.tp2.megamanx.Inimigos.Vile;
+import com.tp2.megamanx.Inimigos.Voador;
+import com.tp2.megamanx.Inimigos.Walking;
+import com.tp2.megamanx.Inimigos.Spark;
 
 import java.util.Random;
 import java.util.ArrayList;
@@ -34,135 +34,148 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.BitmapFont;
 import com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator;
 import com.badlogic.gdx.audio.Sound;
-import com.tp2.megamanx.Ataque;
-import java.util.Iterator;
 
 public class Jogo extends Game {
 
     private boolean jogoIniciado = false; 
-    private boolean objetosCriados = false; // nova flag para evitar criação duplicada
+    private boolean objetosCriados = false; 
 
-    // Texturas das duas fases
-    private Texture texturaMegaMan;      
-    private Texture texturaVoador; 
-    
-    // Texturas da Fase 1
-    private Texture texturaPenguin;            
-    private Texture texturaTrower;
-    private Texture texturaFundo;       
-
-    // Texturas da Fase 2
-    private Texture texturaWalking; 
+    private Texture texturaMegaMan;
+    private Texture texturaMegaMan2;
+    private Texture texturaVoador;
     private Texture texturaHogamer;
+
+    private Texture texturaPenguin;
+    private Texture texturaTrower;
+
+    private Texture texturaWalking; 
     private Texture texturaVile;
-    private Texture texturaSpark;  
+    private Texture texturaSpark;
 
-    // Componentes de renderização e câmera
-    private SpriteBatch batch;                    // Responsável por desenhar texturas na tela
-    private OrthographicCamera camera;            // Câmera ortográfica para visualização 2D
-    private Vector2 cameraFoco;                   // Ponto de foco da câmera (segue o Mega Man)
-    private Viewport viewport;                    // Gerencia diferentes resoluções de tela
+    private Texture texturaFundo;
+
+    private SpriteBatch batch;
+    private OrthographicCamera camera;
+    private Vector2 cameraFoco;
+    private Viewport viewport;
+    private FreeTypeFontGenerator gerador;
+    private FreeTypeFontGenerator.FreeTypeFontParameter parametro;
+    private BitmapFont fonteVida;
+    private ShapeRenderer shapeRenderer;
+
+    private Sound somMorte, somVitoria, somPadrao; 
+    private boolean somPadraoTocando = false;    
+
     
-    // Componentes de fonte e texto
-    private BitmapFont fonteVida;                                   // Fonte para exibir informações de vida
-    private FreeTypeFontGenerator gerador;                          // Gerador de fontes TTF
-    private FreeTypeFontGenerator.FreeTypeFontParameter parametro;  // Parâmetros da fonte
+    private int vidasMegaMan = 3;
+    private boolean fase2Ativada = false;
 
-    private ArrayList<Vector2> posicoesValidas;   
-    private Random random;                        
-
-    private Mapa mapa, mapaSegundaFase;                           
+    private Random random;
+    private ArrayList<Vector2> posicoesValidas;
+    private Mapa mapaFase1, mapaFase2;                          
 
     private GerenciadorColisoes gerenciadorColisoes; 
+
     public InimigoIterator inimigos;                 
     private PersonagemIterator personagens;          
 
     private MegaMan megaMan;          
-    private MegaMan remoteMegaMan;
-    private int vidasMegaMan = 3;     
-    //private boolean gameOver = false; 
+    private MegaMan remoteMegaMan; 
     public Pinguim penguin;         
-
-    // Segunda Fase
-    private boolean segundaFaseAtivada = false; 
     private Vile vile;
     private Spark spark;
 
-    private Sound somMorte, somVitoria, somPadrao; 
-    private boolean somPadraoTocando = false;      
-
-    private ShapeRenderer shapeRenderer;
-
-    // Gerenciamento de rede
-    private NetworkManager networkManager;  // Gerencia a comunicação em rede
-    public boolean isServer = true;       // Indica se esta instância é o servidor
-    private boolean isMultiplayer = false;  // Indica se o jogo está em modo multiplayer
-    private Texture texturaMegaMan2;
+    private NetworkManager networkManager; 
+    public boolean isServer = true;      
+    private boolean isMultiplayer = false; 
     public InimigoIterator remoteInimigos;
-    private PersonagemIterator remotePersonagens;
-    
-    // NEW: map para relacionar id (do servidor) -> inimigo local placeholder
     private Map<Integer, Inimigo> remoteEnemyMap = new HashMap<>();
-    // NEW: vida conhecida anteriormente para detectar diminuições locais
     private Map<Integer, Integer> remoteEnemyLastVida = new HashMap<>();
-
-    // NEW: conjunto de placeholders remotos (clientes) para que não rodem AI local
     private Set<Inimigo> remotePlaceholders = new HashSet<>();
+    private java.util.Set<Ataque> sentAttacks = new java.util.HashSet<>();
 
     @Override
     public void create() {
-        // apenas mostra a tela inicial; não cria objetos do jogo aqui
         setScreen(new TelaInicial(this));
-        // criaObjetosJogo(); <- removido para aguardar callback da TelaInicial
     }
 
-    // método público que a TelaInicial deve chamar quando terminar (todos os botões clicados)
     public void iniciarJogo() {
-        if (objetosCriados) return; // já criado
+        if (objetosCriados) return; 
         objetosCriados = true;
         criaObjetosJogo();
-        // marca o jogo como iniciado para que o loop de render comece a atualizar/desenhar
         setJogoIniciado(true);
     }
 
     private void criaObjetosJogo(){
-        batch = new SpriteBatch();                    
-        camera = new OrthographicCamera();            
-        cameraFoco = new Vector2();                   
-        camera.setToOrtho(false, 800, 600);           
-        viewport = new FillViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight()); 
-        shapeRenderer = new ShapeRenderer();          
+        batch = new SpriteBatch();
+        camera = new OrthographicCamera();
+        camera.setToOrtho(false, 800, 600);
+        cameraFoco = new Vector2();
+        viewport = new FillViewport(Gdx.graphics.getWidth(), Gdx.graphics.getHeight());
         
-        gerador = new FreeTypeFontGenerator(Gdx.files.internal("assets/GAMERIA.ttf")); 
-        parametro = new FreeTypeFontGenerator.FreeTypeFontParameter();        
-        parametro.size = 24;                         
-        parametro.color = Color.WHITE;               
-        fonteVida = gerador.generateFont(parametro);  
-        gerador.dispose();                            
+        gerador = new FreeTypeFontGenerator(Gdx.files.internal("font.ttf"));
+        parametro = new FreeTypeFontGenerator.FreeTypeFontParameter();
+        parametro.size = 24;
+        parametro.color = Color.WHITE;
+        fonteVida = gerador.generateFont(parametro);
+        gerador.dispose();
+
+        shapeRenderer = new ShapeRenderer();
+
+        carregaTexturasFase1();
 
         somMorte = Gdx.audio.newSound(Gdx.files.internal("assets/sons/megaman-x-death-sound-effect.mp3"));
         somVitoria = Gdx.audio.newSound(Gdx.files.internal("assets/sons/mmx-stage-clear.mp3"));
         somPadrao = Gdx.audio.newSound(Gdx.files.internal("assets/sons/mega-man-x2-snes-music-first-stage-audiotrimmer.mp3"));
 
-        random = new Random();                       
-        posicoesValidas = new ArrayList<>();          
-
-        gerenciadorColisoes = new GerenciadorColisoes(); 
-        inimigos = new InimigoIterator();                
-        personagens = new PersonagemIterator();           
-
-        if (isMultiplayer && networkManager == null && isServer) {
-            iniciaMultiplayer(); // Inicializa o modo multiplayer se ativado
-        }
-
-        carregaTexturas();  
-        criaMapa();         
-        criaPersonagens(segundaFaseAtivada);  
-
         somPadrao.play(somPadrao.loop()); // Inicia a música de fundo em loop
         somPadraoTocando = true;
+
+        random = new Random();                       
+        posicoesValidas = new ArrayList<>();    
+        criaMapa();      
+
+        gerenciadorColisoes = new GerenciadorColisoes(); 
+
+        inimigos = new InimigoIterator();                
+        personagens = new PersonagemIterator(); 
+        
+        criaPersonagens(fase2Ativada);
+
+        if (isMultiplayer && networkManager == null && isServer) {
+            iniciaMultiplayer(); 
+        }
+
         if (isMultiplayer && networkManager == null && !isServer) {
-            iniciaMultiplayer(); // Inicializa o modo multiplayer se ativado
+            iniciaMultiplayer(); 
+        }
+    }
+
+    private void criaMapa(){
+        mapaFase1 = new Mapa("maps/MapaFase1.tmx", 800, 600);
+        mapaFase2 = new Mapa("maps/MapaFase2.tmx", 800, 600);
+    }
+
+    private void carregaTexturasFase1(){
+        TipoAtaque.carregarTodasTexturas();    
+        texturaFundo = new Texture("fundos/cena-de-pixels-graficos-de-8-bits-com-montanhas.jpg");                         
+        texturaMegaMan = new Texture("imagens/MegaMan/mega_man.png"); 
+        texturaMegaMan2 = new Texture("imagens/MegaMan/mega_man_green.png");
+        texturaVoador = new Texture("imagens/Fase1/bee.png");    
+        texturaHogamer = new Texture("imagens/Fase1/hogamer.png");
+        texturaPenguin = new Texture("imagens/Fase1/penguin.png");
+        texturaTrower = new Texture("imagens/Fase1/now.png"); 
+    }
+
+    private void carregarTexturasFase2(){
+        if (texturaWalking == null) {
+            texturaWalking = new Texture("imagens/Fase2/walking.png"); 
+        }
+        if (texturaVile == null) {
+            texturaVile = new Texture("imagens/Fase2/vile.png");
+        }
+        if (texturaSpark == null) {
+            texturaSpark = new Texture("imagens/Fase2/spark.png");
         }
     }
 
@@ -176,40 +189,8 @@ public class Jogo extends Game {
         networkManager = new NetworkManager(this, isServer); // Inicializa/recria o gerenciador de rede
     }
 
-    private void criaMapa(){
-        mapa = new Mapa("assets/maps/Mapa.tmx", 800, 600);
-        mapaSegundaFase = new Mapa("assets/maps/MapaSegundaFase.tmx", 800, 600);
-    }
-
-    private void carregaTexturas(){
-        TipoAtaque.carregarTodasTexturas();    
-        texturaFundo = new Texture("assets/fundos/cena-de-pixels-graficos-de-8-bits-com-montanhas.jpg"); 
-                                 
-        texturaMegaMan = new Texture("assets/imagens/MegaMan/mega_man.png"); 
-        texturaVoador = new Texture("assets/imagens/Fase1/bee.png");    
-        texturaHogamer = new Texture("assets/imagens/Fase2/hogamer.png");
-
-        texturaPenguin = new Texture("assets/imagens/Fase1/penguin.png");
-        texturaTrower = new Texture("assets/imagens/Fase1/now.png"); 
-
-        texturaMegaMan2 = new Texture("assets/imagens/MegaMan/mega_man_green.png");
-    }
-
-    private void carregarTexturasFase2(){
-        if (texturaWalking == null) {
-            texturaWalking = new Texture("assets/imagens/Fase2/walking.png"); 
-        }
-        if (texturaVile == null) {
-            texturaVile = new Texture("assets/imagens/Fase2/vile.png");
-        }
-        if (texturaSpark == null) {
-            texturaSpark = new Texture("assets/imagens/Fase2/spark.png");
-        }
-    }
-
-    private void criaPersonagens(boolean segundaFaseAtivada){
-
-        criarInimigos(segundaFaseAtivada);
+    private void criaPersonagens(boolean fase2Ativada){
+        criarInimigos(fase2Ativada);
 
         if(isMultiplayer && !isServer){
             megaMan = new MegaMan(texturaMegaMan2,  330, 2517);
@@ -218,73 +199,89 @@ public class Jogo extends Game {
         }
         personagens.add(megaMan);      
         
-        if(!segundaFaseAtivada){
+        if(!fase2Ativada){
             if (penguin != null) personagens.add(penguin); 
         }                     
 
-        if (segundaFaseAtivada) {
+        if (fase2Ativada) {
             if (vile != null) personagens.add(vile); 
             if (spark != null) personagens.add(spark);                    
         }
     }
 
-    private void criarTrower(int indexPosicao){
-        Ataque ataqueTrower = new Ataque(
-            new TextureRegion(
-                TipoAtaque.BOLA_NEVE.getTextura(), 
-		        TipoAtaque.BOLA_NEVE.getCordX(), 
-                TipoAtaque.BOLA_NEVE.getCordY(),
-		        TipoAtaque.BOLA_NEVE.getLargura(), 
-                TipoAtaque.BOLA_NEVE.getAltura()
-            ), 
-		    new Vector2(0.05f, 0.5f), 0, 0, 
-            TipoAtaque.BOLA_NEVE, -5, false
-        );
+    private void criarInimigos(boolean fase2Ativada){
+        if (isServer) {
+            if(!fase2Ativada){
+                penguin = new Pinguim(texturaPenguin); 
+                inimigos.add(penguin);
+            }else if (fase2Ativada) {
+                criarVile();
+                criarSpark();
+            }
+                
+            determinarPosicoesValidas(); 
 
-        Trower trower = new Trower(texturaTrower, ataqueTrower);
+            // Talvez melhorar essa lógica
+            int indexPosicaoAnterior = -1;
+            for(int i=0; i<15; i++){
+                int indexPosicao = random.nextInt(posicoesValidas.size());
 
-        float posX = posicoesValidas.get(indexPosicao).x - trower.getCorpo().getBoundingRectangle().width;
-        float posY = posicoesValidas.get(indexPosicao).y;
-        
-        trower.setPosicao(posX, posY);
-        inimigos.add(trower);
-        personagens.add(trower);
+                // Garante espaçamento mínimo entre inimigos
+                if(indexPosicaoAnterior == -1 || Math.abs(posicoesValidas.get(indexPosicao).x - posicoesValidas.get(indexPosicaoAnterior).x) > 350){
+                    int sortearPersonagem = random.nextInt(3);
+                    if(sortearPersonagem == 0){
+                        if(!fase2Ativada){
+                            criarTrower(indexPosicao);
+                        }
+                        if(fase2Ativada){
+                            criarWalking(indexPosicao);
+                        }
+                    }
+                    if(sortearPersonagem == 1){
+                        criarVoador(indexPosicao);
+                    }
+                    if(sortearPersonagem == 2){
+                        criarHogamer(indexPosicao);
+                    }
+                } else {
+                    //indexPosicao = random.nextInt(posicoesValidas.size());
+                }
+
+                indexPosicaoAnterior = indexPosicao;
+            }
+
+        }
     }
 
-    private void criarWalking(int indexPosicao){
-        Walking walking = new Walking(texturaWalking);
+    private void determinarPosicoesValidas(){
+        if (!fase2Ativada) {
+            posicoesValidas.clear();
+            Random random = new Random();
 
-        float posX = posicoesValidas.get(indexPosicao).x + walking.getCorpo().getBoundingRectangle().width;
-        float posY = posicoesValidas.get(indexPosicao).y;
-        walking.setPosicao(posX, posY);
+            for(int i=0; i<30; i++){
+                for(Rectangle plataforma : mapaFase1.getChaos()){
+                    float posYplataforma = plataforma.y + plataforma.height + 150;
+                    float posXplataforma = random.nextFloat() * ((plataforma.x + plataforma.width) - plataforma.x) + plataforma.x;
+                    posicoesValidas.add(new Vector2(posXplataforma, posYplataforma));
+                }
+            }
 
-        inimigos.add(walking);
-        personagens.add(walking);
+        } else {
+            posicoesValidas.clear();
+            Random random = new Random();
+
+            for(int i=0; i<30; i++){
+                for(Rectangle plataforma : mapaFase1.getChaos()){
+                    float posYplataforma = plataforma.y + plataforma.height + 150;
+                    float posXplataforma = random.nextFloat() * ((plataforma.x + plataforma.width) - plataforma.x) + plataforma.x;
+                    posicoesValidas.add(new Vector2(posXplataforma, posYplataforma));
+                }
+            }
+
+        }
     }
 
-    private void criarVoador(int indexPosicao){
-        Voador voador = new Voador(texturaVoador);
-
-        float posX = posicoesValidas.get(indexPosicao).x - voador.getCorpo().getBoundingRectangle().width;
-        float posY = posicoesValidas.get(indexPosicao).y;
-        
-        voador.setPosicao(posX, posY);
-        inimigos.add(voador);
-        personagens.add(voador);
-    }
-
-    private void criarHogamer(int indexPosicao){
-        Hogamer hogamer = new Hogamer(texturaHogamer);
-
-        float posX = posicoesValidas.get(indexPosicao).x + hogamer.getCorpo().getBoundingRectangle().width;
-        float posY = posicoesValidas.get(indexPosicao).y + hogamer.getCorpo().getBoundingRectangle().height;
-        
-        hogamer.setPosicao(posX, posY);
-        inimigos.add(hogamer);
-        personagens.add(hogamer);
-    }
-
-    private void criarVile(){
+     private void criarVile(){
         Ataque ataqueVile = new Ataque(
             new TextureRegion(
                 TipoAtaque.BOMBA.getTextura(), 
@@ -314,70 +311,48 @@ public class Jogo extends Game {
         inimigos.add(spark);
     }
 
-    private void criarInimigos(boolean segundaFaseAtivada){
-        if (isServer) {
-            if(!segundaFaseAtivada){
-                penguin = new Pinguim(texturaPenguin); 
-                inimigos.add(penguin);
-            }else if (segundaFaseAtivada) {
-                criarVile();
-                criarSpark();
-            }
-                
-            determinarPosicoesValidas(); 
+    private void criarTrower(int indexPosicao){
+        Trower trower = new Trower(texturaTrower);
 
-            int indexPosicaoAnterior = -1;
-            for(int i=0; i<15; i++){
-                int indexPosicao = random.nextInt(posicoesValidas.size());
+        float posX = posicoesValidas.get(indexPosicao).x - trower.getCorpo().getBoundingRectangle().width;
+        float posY = posicoesValidas.get(indexPosicao).y;
+        trower.setPosicao(posX, posY);
 
-                // Garante espaçamento mínimo entre inimigos
-                if(indexPosicaoAnterior == -1 || Math.abs(posicoesValidas.get(indexPosicao).x - posicoesValidas.get(indexPosicaoAnterior).x) > 350){
-                    int sortearPersonagem = random.nextInt(3);
-                    if(sortearPersonagem == 0){
-                        if(!segundaFaseAtivada){
-                            criarTrower(indexPosicao);
-                        }
-                        if(segundaFaseAtivada){
-                            criarWalking(indexPosicao);
-                        }
-                    }
-                    if(sortearPersonagem == 1){
-                        criarVoador(indexPosicao);
-                    }
-                    if(sortearPersonagem == 2){
-                        criarHogamer(indexPosicao);
-                    }
-                }
-                indexPosicaoAnterior = indexPosicao;
-            }
-            networkManager.sendInimigos(inimigos);
-            networkManager.sendPinguin(penguin);
-        }
+        inimigos.add(trower);
+        personagens.add(trower);
     }
 
-    private void determinarPosicoesValidas(){
-        if (!segundaFaseAtivada) {
-            posicoesValidas.clear();
-            Random random = new Random();
-            for(int i=0; i<10; i++){
-                for(Rectangle plataforma : mapa.getChaos()){
-                    float posYplataforma = plataforma.y + plataforma.height + 150;
-                    float posXplataforma = random.nextFloat() * ((plataforma.x + plataforma.width) - plataforma.x) + plataforma.x;
-                    posicoesValidas.add(new Vector2(posXplataforma, posYplataforma));
-                }
-            }
-        }else{
-            posicoesValidas.clear();
-            Random random = new Random();
-            for(int i=0; i<10; i++){
-                for(Rectangle plataforma : mapaSegundaFase.getChaos()){
-                    float posYplataforma = plataforma.y + plataforma.height + 150;
-                    float posXplataforma = random.nextFloat() * ((plataforma.x + plataforma.width) - plataforma.x) + plataforma.x;
-                    posicoesValidas.add(new Vector2(posXplataforma, posYplataforma));
-                }
-            }
-        }
-        
+    private void criarWalking(int indexPosicao){
+        Walking walking = new Walking(texturaWalking);
+
+        float posX = posicoesValidas.get(indexPosicao).x + walking.getCorpo().getBoundingRectangle().width;
+        float posY = posicoesValidas.get(indexPosicao).y;
+        walking.setPosicao(posX, posY);
+
+        inimigos.add(walking);
+        personagens.add(walking);
+    }
+
+    private void criarVoador(int indexPosicao){
+        Voador voador = new Voador(texturaVoador);
+
+        float posX = posicoesValidas.get(indexPosicao).x - voador.getCorpo().getBoundingRectangle().width;
+        float posY = posicoesValidas.get(indexPosicao).y;
+        voador.setPosicao(posX, posY);
+
+        inimigos.add(voador);
+        personagens.add(voador);
+    }
+
+    private void criarHogamer(int indexPosicao){
+        Hogamer hogamer = new Hogamer(texturaHogamer);
+
+        float posX = posicoesValidas.get(indexPosicao).x + hogamer.getCorpo().getBoundingRectangle().width;
+        float posY = posicoesValidas.get(indexPosicao).y + hogamer.getCorpo().getBoundingRectangle().height;
+        hogamer.setPosicao(posX, posY);
+
+        inimigos.add(hogamer);
+        personagens.add(hogamer);
     }
 
     @Override
@@ -398,7 +373,6 @@ public class Jogo extends Game {
                 }
             }
 
-
             cameraFoco.set(megaMan.getPosX() + megaMan.getCorpo().getBoundingRectangle().width, 
             megaMan.getPosY() + (megaMan.getCorpo().getBoundingRectangle().height/2));
             camera.position.set(cameraFoco, 0);
@@ -411,7 +385,7 @@ public class Jogo extends Game {
             controleFases();
 
             if(vidasMegaMan > 0){
-                atualizarPersonagens();
+                atualizarEntidades();
                 networkManager.sendInimigos(inimigos);
                 //networkManager.sendPinguin(penguin);
                 colisoes();
@@ -500,11 +474,45 @@ public class Jogo extends Game {
 
             // Envia a posição do jogador local e atualiza a posição do jogador remoto
             if (isMultiplayer && networkManager != null) {
-                networkManager.sendPlayerPosition(megaMan.getPosX(), megaMan.getPosY(), isServer ? 0 : 1); // ID 0 para servidor, 1 para cliente
+                // Enviar posição + estado de animação do jogador para o outro peer
+                PlayerPosition pp = new PlayerPosition(megaMan.getPosX(), megaMan.getPosY(), isServer ? 0 : 1);
+                try {
+                    pp.regionX = megaMan.getRegionX();
+                    pp.regionY = megaMan.getRegionY();
+                    pp.regionW = megaMan.getRegionWidth();
+                    pp.regionH = megaMan.getRegionHeight();
+                    pp.paraDireita = megaMan.isParaDireita();
+                } catch (Throwable ignored) {}
+                networkManager.sendPlayerPosition(pp);
                 if (isServer) {
                     networkManager.sendEnemyPositions(); // Envia posições dos inimigos se for servidor
                     
                 }
+                // Envia ataques recém-criados para o peer (evita reenvio múltiplo usando sentAttacks)
+                try {
+                    java.util.Set<Ataque> currentAttacks = new java.util.HashSet<>();
+                    personagens.reset();
+                    while (personagens.hasNext()) {
+                        Personagem p = personagens.next();
+                        for (Ataque a : p.getAtaquesAtivos()) {
+                            if (a == null) continue;
+                            currentAttacks.add(a);
+                            if (!sentAttacks.contains(a)) {
+                                try {
+                                    int tipo = 0;
+                                    try { if (a.getTipo() != null) tipo = a.getTipo().ordinal(); } catch (Throwable ignored) {}
+                                    networkManager.sendTiroPositions(a.getPosX(), a.getPosY(), p.hashCode(), tipo, a.isParaDireita());
+                                    sentAttacks.add(a);
+                                } catch (Throwable t) {
+                                    Gdx.app.error("Network", "Failed to send tiro: " + t.getMessage());
+                                }
+                            }
+                        }
+                    }
+                    personagens.reset();
+                    // cleanup: remove ataques que já foram removidos localmente
+                    sentAttacks.retainAll(currentAttacks);
+                } catch (Throwable ignored) {}
             }
             System.out.println(megaMan.getPosX() + " - " + megaMan.getPosY());
 
@@ -527,71 +535,81 @@ public class Jogo extends Game {
     }
 
     private void controleFases(){
-        // Proteção: verificar primeiro se penguin != null e usar && (short-circuit)
-        if (!segundaFaseAtivada) {
+        if (!fase2Ativada) {
             if (penguin != null && penguin.getVida() <= 0) {
-                iniciarSegundaFase();
+                if(penguin.isMorreu() && penguin.getDeltaTime() > 3.5f){
+                    penguin.setPosicao(-500, -500);
+                    fase2Ativada = true;
+                    iniciarSegundaFase(true);
+                }
             }
         }
         
-        if(segundaFaseAtivada){
-            if(spark != null){
-                if(spark.getVida() <= 0){
+        if(fase2Ativada){
+            if(spark != null && spark.getVida() <= 0){
+                if(spark.isMorreu() && spark.getDeltaTime() > 3.5f){
+                    spark.setPosicao(-500, -500);
+                    fase2Ativada = false;
                     somVitoria.play();
-                    segundaFaseAtivada = false; 
-                    jogoIniciado = false;
-                    setScreen(new TelaVitoria(this));
+                    setScreen(new TelaVitoria(this));   
                 }
             }
         }
         
         if ((megaMan.isMorreu()) && vidasMegaMan <= 0) {
-            somMorte.play();
-            segundaFaseAtivada = false; 
-            jogoIniciado = false;
-            setScreen(new TelaGameOver(this));
-            return;
+            if(megaMan.getDeltaTime() > 3.5f){
+                fase2Ativada = false; 
+                somMorte.play();
+                setScreen(new TelaGameOver(this));
+            }
         }
     }
 
-    private void iniciarSegundaFase(){
+    public void iniciarSegundaFase(boolean notifyNetwork){
         penguin = null;
         megaMan = null;
         remoteMegaMan = null;
 
-        
-        segundaFaseAtivada = true;
+        fase2Ativada = true;
 
         carregarTexturasFase2();
 
         inimigos.clear();
         personagens.clear();
 
-        criaPersonagens(segundaFaseAtivada);
-     }
+        criaPersonagens(fase2Ativada);
 
-    private void atualizarPersonagens(){
-        ataquesPersonagens();
+        if (notifyNetwork && networkManager != null) {
+            try {
+                networkManager.sendPhaseChange(true);
+            } catch (Throwable t) {
+                Gdx.app.error("Network", "Failed to send PhaseChange: " + t.getMessage());
+            }
+        }
+        
+    }
 
-        megaMan.confereMortePorQueda(); 
-
-        if((megaMan.isMorreu()) && vidasMegaMan > 0){
-            vidasMegaMan--;
-            megaMan.setVida(16);
-            megaMan.setPosicao(330, 2517);
-            megaMan.setMorreu(false);
-            //criarInimigos(segundaFaseAtivada);
+    private void atualizarEntidades(){
+        if(vidasMegaMan > 0){
+            if(megaMan.isMorreu() && megaMan.getDeltaTime() > 3.5f){
+                vidasMegaMan--;
+                megaMan.setVida(16);
+                megaMan.setPosicao(330, 2517);
+                megaMan.setMorreu(false);
+            }
         }
 
-        if(vidasMegaMan <= 0){
-            megaMan.setMorreu(true);
-        }
+        atualizarBosses();
+        atualizarPersonagens();
+        atualizarInimigos();
+    }
 
-        if(!segundaFaseAtivada){
+    private void atualizarBosses(){
+        if(!fase2Ativada){
             if (penguin != null) penguin.atualizar();
         } 
 
-        if (segundaFaseAtivada) {
+        if (fase2Ativada) {
             if (vile != null) vile.atualizar();
             if (spark != null) spark.atualizar();
 
@@ -601,8 +619,19 @@ public class Jogo extends Game {
             if (spark != null && spark.getVida() <= 0) {
                 spark.morrer();
             }
-        }
 
+            if(vile != null){
+                if(vile.isMorreu() && vile.getDeltaTime() > 3.5f){
+                    vile.setPosicao(-500, -500);
+                }
+            }
+        }
+    }
+
+     private void atualizarPersonagens(){
+        megaMan.confereMortePorQueda(); 
+
+        atualizarAtaquesPersonagens();
         personagens.reset();
         while (personagens.hasNext()) {
             Personagem personagem = personagens.next();
@@ -611,44 +640,59 @@ public class Jogo extends Game {
             personagem.morrer();
         }
         personagens.reset();
-
-        inimigos.reset();
-        while (inimigos.hasNext()) {
-            Inimigo inimigo = inimigos.next();
-            // Skip calling AI-follow for remote placeholders controlled by server
-            if (remotePlaceholders.contains(inimigo)) {
-                continue;
-            }
-            inimigo.setPosicaoMegaMan(new Vector2(megaMan.getPosX(), megaMan.getPosY()));
-        }
-        inimigos.reset();
-
     }
 
-    private void ataquesPersonagens(){
+    private void atualizarAtaquesPersonagens(){
         personagens.reset();
         while (personagens.hasNext()) {
             Personagem personagem = personagens.next();
             for(int i=0; i < personagem.getAtaquesAtivos().size(); i++){
                 personagem.getAtaquesAtivos().get(i).disparar();
-                //personagem.getAtaquesAtivos().remove(personagem.getAtaquesAtivos().get(i));
             }
         }
         personagens.reset();
     }
 
+    private void atualizarInimigos(){
+        inimigos.reset();
+        while (inimigos.hasNext()) {
+            Inimigo inimigo = inimigos.next();
+
+            if (remotePlaceholders.contains(inimigo)) {
+                continue;
+            }
+
+            if(remoteMegaMan != null){
+                Vector2 posInimigo = inimigo.getPosicao();
+                Vector2 posRemoteMegaMan = new Vector2(remoteMegaMan.getPosX(), remoteMegaMan.getPosY());
+                Vector2 posMegaMan = new Vector2(megaMan.getPosX(), megaMan.getPosY());
+
+                float distanciaRemoteInimigo = posRemoteMegaMan.dst(posInimigo);
+                float distanciaMegaManInimigo = posMegaMan.dst(posInimigo); 
+                if(distanciaRemoteInimigo < distanciaMegaManInimigo){
+                    inimigo.setPosicaoMegaMan(new Vector2(remoteMegaMan.getPosX(), remoteMegaMan.getPosY()));
+                }else{  
+                    inimigo.setPosicaoMegaMan(new Vector2(megaMan.getPosX(), megaMan.getPosY()));
+                }
+            }else{
+                inimigo.setPosicaoMegaMan(new Vector2(megaMan.getPosX(), megaMan.getPosY()));
+            }
+            
+        }
+        inimigos.reset();
+    }
+
     private void colisoes() {
+        Mapa tipoMapa = fase2Ativada ? mapaFase2 : mapaFase1;
 
-        Mapa mapaAux = segundaFaseAtivada ? mapaSegundaFase : mapa;
-
-        gerenciadorColisoes.colisaoPersonagensPlataformas(mapaAux.getRetangulosColisao(), personagens);
+        gerenciadorColisoes.colisaoPersonagensPlataformas(tipoMapa.getRetangulosColisao(), personagens);
 
         personagens.reset();
         while (personagens.hasNext()) {
             Personagem personagem = personagens.next();
             gerenciadorColisoes.colisaoPersonagemParedes(
-                mapaAux.getRetangulosColisaoParedeDireita(),
-                mapaAux.getRetangulosColisaoParedeEsquerda(),
+                tipoMapa.getRetangulosColisaoParedeDireita(),
+                tipoMapa.getRetangulosColisaoParedeEsquerda(),
                 personagem
             );
         }
@@ -667,101 +711,35 @@ public class Jogo extends Game {
         personagens.reset();
         while (personagens.hasNext()) {
             Personagem personagem = personagens.next();
-            gerenciadorColisoes.colisaoAtaquesPlataformas(mapaAux.getRetangulosColisao(), personagem.getAtaquesAtivos());
+            gerenciadorColisoes.colisaoAtaquesPlataformas(tipoMapa.getRetangulosColisao(), personagem.getAtaquesAtivos());
         }
         personagens.reset();
     }
 
-    private void desenhaVidaMegaMan(float larguraBarra, float alturaBarra, float margem, float borda){
-        float vidaMaxMegaMan = 16f;
-        float vidaAtualMegaMan = megaMan.getVida();
-        float proporcaoMegaMan = Math.max(vidaAtualMegaMan / vidaMaxMegaMan, 0);
-
-        float barraMegaManX = camera.position.x - camera.viewportWidth / 2 + margem;
-        float barraMegaManY = camera.position.y - alturaBarra / 2;
-
-        shapeRenderer.setProjectionMatrix(camera.combined);
-        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-        shapeRenderer.setColor(new Color(0, 0.1f, 0.5f, 1));
-        shapeRenderer.rect(barraMegaManX - borda, barraMegaManY - borda, larguraBarra + 2 * borda, alturaBarra + 2 * borda);
-
-        shapeRenderer.setColor(Color.DARK_GRAY);
-        shapeRenderer.rect(barraMegaManX, barraMegaManY, larguraBarra, alturaBarra);
-
-        shapeRenderer.setColor(Color.YELLOW);
-        shapeRenderer.rect(barraMegaManX, barraMegaManY, larguraBarra, alturaBarra * proporcaoMegaMan);
-
-        shapeRenderer.end();
-    }
-
-    private void desenharVidas() {
-        float larguraBarra = 20;
-        float alturaBarra = 200;
-        float margem = 30;
-        float borda = 4;
-
-        desenhaVidaMegaMan(larguraBarra, alturaBarra, margem, borda);
-
-        float distancia = 0;
-        float vidaMaxBoss = 0;
-        float vidaAtualBoss = 0;
-
-        if(!segundaFaseAtivada && (penguin != null)){
-            distancia = megaMan.getCorpo().getBoundingRectangle().getCenter(new Vector2()).dst(
-                penguin.getCorpo().getBoundingRectangle().getCenter(new Vector2())
-            ); 
-            vidaMaxBoss = 32f;
-            vidaAtualBoss = penguin.getVida();
-        }
-        else if(segundaFaseAtivada && (spark != null)){
-            distancia = megaMan.getCorpo().getBoundingRectangle().getCenter(new Vector2()).dst(
-                spark.getCorpo().getBoundingRectangle().getCenter(new Vector2())
-            ); 
-            vidaMaxBoss = 40f;
-            vidaAtualBoss = spark.getVida();
-        }
-
-        if (distancia < 600) {
-            float proporcaoPenguin = Math.max(vidaAtualBoss / vidaMaxBoss, 0);
-
-            float barraBossX = camera.position.x + camera.viewportWidth / 2 - margem - larguraBarra;
-            float barraBossY = camera.position.y - alturaBarra / 2;
-
-            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
-            shapeRenderer.setColor(new Color(0, 0.1f, 0.5f, 1));
-            shapeRenderer.rect(barraBossX - borda, barraBossY - borda, larguraBarra + 2 * borda, alturaBarra + 2 * borda);
-
-            shapeRenderer.setColor(Color.DARK_GRAY);
-            shapeRenderer.rect(barraBossX, barraBossY, larguraBarra, alturaBarra);
-
-            shapeRenderer.setColor(Color.RED);
-            shapeRenderer.rect(barraBossX, barraBossY, larguraBarra, alturaBarra * proporcaoPenguin);
-
-            shapeRenderer.end();
-        }
-
-    }
-
     private void desenhaItens(){
-        Mapa mapaAux = segundaFaseAtivada ? mapaSegundaFase : mapa;
+        Mapa tipoMapa = fase2Ativada ? mapaFase2 : mapaFase1;
+       
         batch.begin();
         batch.draw(texturaFundo, camera.position.x - camera.viewportWidth / 2, camera.position.y - camera.viewportHeight / 2, camera.viewportWidth, camera.viewportHeight );
         batch.end();
-        mapaAux.render(camera);
+
+        tipoMapa.render(camera);
 
         batch.begin();
+
         desenharEntidades(); 
        
         fonteVida.draw(batch, "Vida MegaMan: " + megaMan.getVida(), camera.position.x - camera.viewportWidth / 2 + 20, camera.position.y + camera.viewportHeight / 2 - 20);
         
-        if(!segundaFaseAtivada && (penguin != null)){
+        if(!fase2Ativada && (penguin != null)){
             fonteVida.draw(batch, "Vida Penguin: " + penguin.getVida(), camera.position.x - camera.viewportWidth / 2 + 20, camera.position.y + camera.viewportHeight / 2 - 50);
         }
-        else if(segundaFaseAtivada && (spark != null)){
+        else if(fase2Ativada && (spark != null)){
             fonteVida.draw(batch, "Vida Spark: " + spark.getVida(), camera.position.x - camera.viewportWidth / 2 + 20, camera.position.y + camera.viewportHeight / 2 - 50);
         }
         
         desenharVidas();
+
         batch.end();
         
         shapeRenderer.setProjectionMatrix(camera.combined);
@@ -796,6 +774,86 @@ public class Jogo extends Game {
         personagens.reset();
     }
 
+    private void desenharVidas() {
+        float larguraBarra = 20;
+        float alturaBarra = 200;
+        float margem = 30;
+        float borda = 4;
+
+        desenhaVidaMegaMan(larguraBarra, alturaBarra, margem, borda);
+
+        InformacoesBoss informacoesBoss = new InformacoesBoss();
+        determinarInformacoesBoss(informacoesBoss);
+        desenharVidaBoss(informacoesBoss, larguraBarra, alturaBarra, margem, borda);
+    }
+
+    private void desenhaVidaMegaMan(float larguraBarra, float alturaBarra, float margem, float borda){
+        float vidaMaxMegaMan = 16f;
+        float vidaAtualMegaMan = megaMan.getVida();
+        float proporcaoMegaMan = Math.max(vidaAtualMegaMan / vidaMaxMegaMan, 0);
+
+        float barraMegaManX = camera.position.x - camera.viewportWidth / 2 + margem;
+        float barraMegaManY = camera.position.y - alturaBarra / 2;
+
+        shapeRenderer.setProjectionMatrix(camera.combined);
+        shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+        shapeRenderer.setColor(new Color(0, 0.1f, 0.5f, 1));
+        shapeRenderer.rect(barraMegaManX - borda, barraMegaManY - borda, larguraBarra + 2 * borda, alturaBarra + 2 * borda);
+
+        shapeRenderer.setColor(Color.DARK_GRAY);
+        shapeRenderer.rect(barraMegaManX, barraMegaManY, larguraBarra, alturaBarra);
+
+        shapeRenderer.setColor(Color.YELLOW);
+        shapeRenderer.rect(barraMegaManX, barraMegaManY, larguraBarra, alturaBarra * proporcaoMegaMan);
+
+        shapeRenderer.end();
+    }
+
+    class InformacoesBoss {
+        float distancia = 0;
+        float vidaMaxBoss = 0;
+        float vidaAtualBoss = 0;    
+    }
+
+    public void determinarInformacoesBoss(InformacoesBoss informacoesBoss){
+        if(!fase2Ativada && (penguin != null)){
+            informacoesBoss.distancia = megaMan.getCorpo().getBoundingRectangle().getCenter(new Vector2()).dst(
+                penguin.getCorpo().getBoundingRectangle().getCenter(new Vector2())
+            ); 
+            informacoesBoss.vidaMaxBoss = 32f;
+            informacoesBoss.vidaAtualBoss = penguin.getVida();
+        }
+        else if(fase2Ativada && (spark != null)){
+            informacoesBoss.distancia = megaMan.getCorpo().getBoundingRectangle().getCenter(new Vector2()).dst(
+                spark.getCorpo().getBoundingRectangle().getCenter(new Vector2())
+            ); 
+            informacoesBoss.vidaMaxBoss = 40f;
+            informacoesBoss.vidaAtualBoss = spark.getVida();
+        }
+    }
+
+    private void desenharVidaBoss(InformacoesBoss informacoesBoss, float larguraBarra, float alturaBarra, float margem, float borda){
+        if (informacoesBoss.distancia < 600) {
+            float proporcaoBoss = Math.max(informacoesBoss.vidaAtualBoss / informacoesBoss.vidaMaxBoss, 0);
+
+            float barraBossX = camera.position.x + camera.viewportWidth / 2 - margem - larguraBarra;
+            float barraBossY = camera.position.y - alturaBarra / 2;
+
+            shapeRenderer.begin(ShapeRenderer.ShapeType.Filled);
+            shapeRenderer.setColor(new Color(0, 0.1f, 0.5f, 1));
+            shapeRenderer.rect(barraBossX - borda, barraBossY - borda, larguraBarra + 2 * borda, alturaBarra + 2 * borda);
+
+            shapeRenderer.setColor(Color.DARK_GRAY);
+            shapeRenderer.rect(barraBossX, barraBossY, larguraBarra, alturaBarra);
+
+            shapeRenderer.setColor(Color.RED);
+            shapeRenderer.rect(barraBossX, barraBossY, larguraBarra, alturaBarra * proporcaoBoss);
+
+            shapeRenderer.end();
+        }
+    }
+
+   
     public void setJogoIniciado(boolean iniciado) {
         this.jogoIniciado = iniciado;
     }
@@ -817,10 +875,12 @@ public class Jogo extends Game {
     // Define se o jogo está em modo multiplayer
     public void setIsMultiplayer(boolean isMultiplayer) {
         this.isMultiplayer = isMultiplayer;
+
         // Se ativou multiplayer depois dos objetos já terem sido criados, inicializa a rede
         if (this.isMultiplayer && objetosCriados && networkManager == null) {
             iniciaMultiplayer();
         }
+
         // Se desativou multiplayer, descarte o gerenciador de rede
         if (!this.isMultiplayer && networkManager != null) {
             networkManager.dispose();
@@ -828,33 +888,31 @@ public class Jogo extends Game {
         }
     }
 
-    public void setSegundaFaseAtivada(boolean ativada) {
-        this.segundaFaseAtivada = ativada;
-    }
-
-    @Override
-    public void resize(int width, int height) {
-        if (viewport != null) {
-            viewport.update(width, height);
-        }
+    public void setSegundaFaseAtivada(boolean fase2Ativada) {
+        this.fase2Ativada = fase2Ativada;
     }
 
     public void reset(){
         vidasMegaMan = 3;
-        segundaFaseAtivada = false;
+        fase2Ativada = false;
         objetosCriados = false; // permitir recriar depois do reset
         dispose();
-        //create();
-        // Opcional: abrir novamente a tela inicial ou recriar imediatamente:
-        // setScreen(new TelaInicial(this)); // se quiser voltar à tela inicial
-        // ou recriar diretamente:
         criaObjetosJogo();
         objetosCriados = true;
     }
 
+
     public void updateRemotePlayer(PlayerPosition pos) {
         if (remoteMegaMan != null) {
-            remoteMegaMan.setPosicao(pos.x, pos.y);
+            try {
+                remoteMegaMan.setPosicao(pos.x, pos.y);
+                // aplicar orientação antes de setRegion para que flip funcione corretamente
+                try { remoteMegaMan.setParaDireita(pos.paraDireita); } catch (Throwable ignored) {}
+                try { remoteMegaMan.setRegion(pos.regionX, pos.regionY, pos.regionW, pos.regionH); } catch (Throwable ignored) {}
+            } catch (Throwable ignored) {
+                // fallback: apenas posicionar
+                try { remoteMegaMan.setPosicao(pos.x, pos.y); } catch (Throwable ignored2) {}
+            }
         }
     }
 
@@ -866,6 +924,19 @@ public class Jogo extends Game {
             pos.x.add(((Personagem) inimigo).getPosX()); // Adiciona posição X
             pos.y.add(((Personagem) inimigo).getPosY()); // Adiciona posição Y
             pos.ids.add(inimigo.hashCode()); // Adiciona ID
+            // Determina tipo do inimigo para que o cliente crie o mesmo tipo
+            int tipo = 0; // default -> Trower/Voador mapping
+            try {
+                if (inimigo instanceof Trower) tipo = 0;
+                else if (inimigo instanceof Voador) tipo = 1;
+                else if (inimigo instanceof Hogamer) tipo = 2;
+                else if (inimigo instanceof Walking) tipo = 3;
+                else if (inimigo instanceof Vile) tipo = 4;
+                else if (inimigo instanceof Spark) tipo = 5;
+                else if (inimigo instanceof Pinguim) tipo = 6;
+                else tipo = 0;
+            } catch (Throwable ignored) { tipo = 0; }
+            pos.types.add(tipo);
         }
         inimigos.reset(); 
         return pos;
@@ -879,16 +950,85 @@ public class Jogo extends Game {
                 float y = pos.y.get(i);
                 Inimigo local = remoteEnemyMap.get(id);
                 if (local == null) {
-                    // Cria placeholder – usamos Voador como genérico visual
-                    if (texturaVoador == null) carregaTexturas();
-                    Voador placeholder = new Voador(texturaVoador);
-                    placeholder.setPosicao(x, y);
-                    inimigos.add(placeholder);
-                    personagens.add(placeholder);
-                    remoteEnemyMap.put(id, placeholder);
-                    remotePlaceholders.add(placeholder); // marcar como controlado pelo servidor
-                    // inicializar vida conhecida (se a classe tiver)
-                    try { remoteEnemyLastVida.put(id, placeholder.getVida()); } catch (Throwable ignored) {}
+                    // Cria placeholder do mesmo tipo enviado pelo servidor
+                    int tipo = 0;
+                    try { tipo = pos.types.get(i); } catch (Throwable ignored) { tipo = 0; }
+                    Inimigo placeholder = null;
+                    try {
+                        // Garante que texturas estejam carregadas no cliente
+                        if (texturaFundo == null || texturaMegaMan == null) carregaTexturasFase1();
+                        switch (tipo) {
+                            case 0: { // Trower
+                                placeholder = new com.tp2.megamanx.Inimigos.Trower(texturaTrower);
+                                break;
+                            }
+                            case 1: { // Voador
+                                if (texturaVoador == null) carregaTexturasFase1();
+                                placeholder = new com.tp2.megamanx.Inimigos.Voador(texturaVoador);
+                                break;
+                            }
+                            case 2: { // Hogamer
+                                if (texturaHogamer == null) carregaTexturasFase1();
+                                placeholder = new com.tp2.megamanx.Inimigos.Hogamer(texturaHogamer);
+                                break;
+                            }
+                            case 3: { // Walking (Fase2)
+                                if (texturaWalking == null) carregarTexturasFase2();
+                                placeholder = new com.tp2.megamanx.Inimigos.Walking(texturaWalking);
+                                break;
+                            }
+                            case 4: { // Vile (boss)
+                                if (texturaVile == null) carregarTexturasFase2();
+                                Ataque ataqueVile = new Ataque(
+                                    new com.badlogic.gdx.graphics.g2d.TextureRegion(
+                                        TipoAtaque.BOMBA.getTextura(),
+                                        TipoAtaque.BOMBA.getCordX(), TipoAtaque.BOMBA.getCordY(),
+                                        TipoAtaque.BOMBA.getLargura(), TipoAtaque.BOMBA.getAltura()
+                                    ),
+                                    new com.badlogic.gdx.math.Vector2(0.05f, 0.5f), 0, 0,
+                                    TipoAtaque.BOMBA, -5, false
+                                );
+                                placeholder = new com.tp2.megamanx.Inimigos.Vile(texturaVile, ataqueVile);
+                                break;
+                            }
+                            case 5: { // Spark (boss)
+                                if (texturaSpark == null) carregarTexturasFase2();
+                                Ataque ataqueSpark = new Ataque(
+                                    new com.badlogic.gdx.graphics.g2d.TextureRegion(
+                                        TipoAtaque.CHOQUE.getTextura(),
+                                        TipoAtaque.CHOQUE.getCordX(), TipoAtaque.CHOQUE.getCordY(),
+                                        TipoAtaque.CHOQUE.getLargura(), TipoAtaque.CHOQUE.getAltura()
+                                    ),
+                                    new com.badlogic.gdx.math.Vector2(0.05f, 0.5f), 0, 0,
+                                    TipoAtaque.CHOQUE, -5, false
+                                );
+                                placeholder = new com.tp2.megamanx.Inimigos.Spark(texturaSpark, ataqueSpark);
+                                break;
+                            }
+                            case 6: { // Pinguim: o estado do pinguim é enviado separadamente (updatePinguinState), pular aqui
+                                placeholder = null;
+                                break;
+                            }
+                            default: {
+                                if (texturaVoador == null) carregaTexturasFase1();
+                                placeholder = new com.tp2.megamanx.Inimigos.Voador(texturaVoador);
+                                break;
+                            }
+                        }
+                    } catch (Throwable t) {
+                        Gdx.app.error("Network", "Failed to instantiate placeholder enemy: " + t.getMessage());
+                        try { if (texturaVoador == null) carregaTexturasFase1(); } catch (Throwable ignored) {}
+                    }
+
+                    if (placeholder != null) {
+                        // placeholder is created as a concrete Personagem subclass (which also implements Inimigo)
+                        try { ((Personagem) placeholder).setPosicao(x, y); } catch (Throwable ignored) {}
+                        inimigos.add(placeholder);
+                        try { personagens.add((Personagem) placeholder); } catch (Throwable t) { /* fallback: ignore if not castable */ }
+                        remoteEnemyMap.put(id, placeholder);
+                        remotePlaceholders.add(placeholder); // marcar como controlado pelo servidor
+                        try { remoteEnemyLastVida.put(id, ((Personagem) placeholder).getVida()); } catch (Throwable ignored) {}
+                    }
                 } else {
                     ((Personagem) local).setPosicao(x, y);
                 }
@@ -903,7 +1043,7 @@ public class Jogo extends Game {
         if (!isServer) {
             try {
                 if (texturaPenguin == null) {
-                    carregaTexturas(); // garante que textura exista no cliente
+                    carregaTexturasFase1(); // garante que textura exista no cliente
                 }
                 if (penguin == null) {
                     penguin = new Pinguim(texturaPenguin);
@@ -919,6 +1059,47 @@ public class Jogo extends Game {
         }
     }
 
+    // NEW: cria/recebe um tiro vindo pela rede e o adiciona ao personagem correto (ou ao jogo)
+    public void handleIncomingTiro(com.tp2.megamanx.PosicaoTiro pt) {
+        if (pt == null) return;
+        try {
+            // garante texturas carregadas
+            TipoAtaque.carregarTodasTexturas();
+            TipoAtaque tipo = TipoAtaque.values()[Math.max(0, Math.min(pt.tipo, TipoAtaque.values().length - 1))];
+            com.badlogic.gdx.graphics.g2d.TextureRegion region = new com.badlogic.gdx.graphics.g2d.TextureRegion(
+                tipo.getTextura(), tipo.getCordX(), tipo.getCordY(), tipo.getLargura(), tipo.getAltura()
+            );
+            com.badlogic.gdx.math.Vector2 escala = new com.badlogic.gdx.math.Vector2(0.3f, 1.2f);
+            Ataque novo = new Ataque(region, escala, pt.x, pt.y, tipo, 0, pt.paraDireita);
+            novo.setColidiu(false);
+
+            // tenta anexar ao personagem que disparou, se existir
+            boolean attached = false;
+            personagens.reset();
+            while (personagens.hasNext()) {
+                Personagem p = personagens.next();
+                if (p.hashCode() == pt.id) {
+                    try { p.getAtaquesAtivos().add(novo); attached = true; } catch (Throwable ignored) {}
+                    break;
+                }
+            }
+            personagens.reset();
+
+            if (!attached) {
+                // se não encontrou o emissor, tenta anexar ao remoteMegaMan (player remoto) ou ao player local
+                try {
+                    if (remoteMegaMan != null) {
+                        remoteMegaMan.getAtaquesAtivos().add(novo);
+                    } else if (megaMan != null) {
+                        megaMan.getAtaquesAtivos().add(novo);
+                    }
+                } catch (Throwable ignored) {}
+            }
+        } catch (Throwable t) {
+            Gdx.app.error("Network", "handleIncomingTiro failed: " + t.getMessage());
+        }
+    }
+
     // NEW: chamado pelo servidor quando receber EnemyHit — aplica dano no servidor (autoridade)
     public void applyEnemyHit(int enemyId, int damage) {
         if (!isServer) return;
@@ -931,6 +1112,7 @@ public class Jogo extends Game {
                 } catch (Throwable t) {
                     Gdx.app.error("Game", "Failed applyEnemyHit (tomarDano): " + t.getMessage());
                 }
+
                 // se morreu, remover placeholder mappings caso exista (segurança)
                 try {
                     // supondo que inimigo.morrer() marque estado; se já morreu, limpe map/set
@@ -941,19 +1123,28 @@ public class Jogo extends Game {
                 break;
             }
         }
+
         inimigos.reset();
         if (networkManager != null) {
             networkManager.sendEnemyPositions();
         }
     }
 
+
+    @Override
+    public void resize(int width, int height) {
+        if (viewport != null) {
+            viewport.update(width, height);
+        }
+    }
+
     @Override
     public void dispose() {
-        if(mapa != null) {
-            mapa.dispose();
+        if(mapaFase1 != null) {
+            mapaFase1.dispose();
         }
-        if(mapaSegundaFase != null) {
-            mapaSegundaFase.dispose();
+        if(mapaFase2 != null) {
+            mapaFase2.dispose();
         }
         if(batch != null) {
             batch.dispose();

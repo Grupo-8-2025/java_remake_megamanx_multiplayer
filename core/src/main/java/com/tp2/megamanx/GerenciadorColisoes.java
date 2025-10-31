@@ -1,13 +1,15 @@
 package com.tp2.megamanx;
 
+import com.tp2.megamanx.Inimigos.Inimigo;
 import com.tp2.megamanx.Iterators.InimigoIterator;
 import com.tp2.megamanx.Iterators.PersonagemIterator;
-import com.tp2.megamanx.inimigos.Inimigo;
 
 import java.util.ArrayList;
 
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.utils.Array;
+
+// Dividir as funções
 
 public class GerenciadorColisoes {
 
@@ -22,7 +24,6 @@ public class GerenciadorColisoes {
         boolean colidiuDireita = false;
         boolean colidiuEsquerda = false;
 
-        // Checa colisão com paredes da direita
         for (Rectangle parede : paredesDireita) {
             if (corpo.overlaps(parede)) {
                 colidiuDireita = true;
@@ -30,7 +31,6 @@ public class GerenciadorColisoes {
             }
         }
 
-        // Checa colisão com paredes da esquerda
         for (Rectangle parede : paredesEsquerda) {
             if (corpo.overlaps(parede)) {
                 colidiuEsquerda = true;
@@ -38,11 +38,9 @@ public class GerenciadorColisoes {
             }
         }
 
-        // Atualiza flags de movimento para todos os personagens
         personagem.setPodeAndarDireita(!colidiuDireita);
         personagem.setPodeAndarEsquerda(!colidiuEsquerda);
 
-        // Se for MegaMan, mantém lógica do naParede
         if(personagem instanceof MegaMan){
             MegaMan megaMan = (MegaMan) personagem;
             megaMan.setNaParede(colidiuDireita || colidiuEsquerda);
@@ -93,7 +91,7 @@ public class GerenciadorColisoes {
                 Rectangle corpoAtaque = ataque.getCorpo().getBoundingRectangle();
                 if (colisaoCorpos(plataforma, corpoAtaque)) {
                     ataque.setColidiu(true);
-                    ataque.setPodeDisparar(false);
+                    ataque.setPodeMovimentar(false);
                     ataque.setPosicao(-100, -100);
                     ataques.remove(ataque);
                 }
@@ -109,7 +107,7 @@ public class GerenciadorColisoes {
 
             if(colisaoCorpos(corpoAtaque, corpoMegaman)){
                 ataque.setColidiu(true);
-                ataque.setPodeDisparar(false);
+                ataque.setPodeMovimentar(false);
                 ataque.setPosicao(-100, -100);
                 megaMan.tomarDano(ataque.getTipo().getDano());
                 System.out.println("Personagem e ataque");
@@ -128,7 +126,7 @@ public class GerenciadorColisoes {
 
             if(colisaoCorpos(corpoAtaque, corpoPersonagem)){
                 ataque.setColidiu(true);
-                ataque.setPodeDisparar(false);
+                ataque.setPodeMovimentar(false);
                 ataque.setPosicao(-100, -100);
                 inimigo.tomarDano(ataque.getTipo().getDano());
                 ataques.remove(i);
@@ -152,4 +150,3 @@ public class GerenciadorColisoes {
     }
 
 }
-

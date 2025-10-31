@@ -29,14 +29,14 @@ public class TelaInicial implements Screen {
     }
 
     private void create() {
-        fontGenerator = new FreeTypeFontGenerator(Gdx.files.internal("assets/GAMERIA2.ttf"));
+        fontGenerator = new FreeTypeFontGenerator(Gdx.files.internal("GAMERIA.ttf"));
         fontParameter = new FreeTypeFontParameter();
         fontParameter.size = 20;
         font = fontGenerator.generateFont(fontParameter);
 
         spriteBatch = new SpriteBatch();
         portTela = new FitViewport(800, 500);
-        imgFundoMegaManX = new Texture("assets/imagens/Mega_Man_X_Logo.png");
+        imgFundoMegaManX = new Texture("assets/imagens/mega_man_logo.png");
     }
 
     void desenharTelaInicial(BitmapFont font, SpriteBatch spriteBatch, Texture imgFundoMegaManX, float worldHeight) {
