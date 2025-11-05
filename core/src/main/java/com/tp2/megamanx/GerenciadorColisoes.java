@@ -132,6 +132,7 @@ public class GerenciadorColisoes {
                 ataques.remove(i);
                 break; 
             }
+            
 
         } 
     }

@@ -5,6 +5,11 @@ import com.esotericsoftware.kryonet.Connection;
 import com.esotericsoftware.kryonet.Listener;
 import com.esotericsoftware.kryonet.Server;
 import com.tp2.megamanx.Iterators.InimigoIterator;
+import com.tp2.megamanx.UtilitariosConexao.EnemyPosition;
+import com.tp2.megamanx.UtilitariosConexao.GerenciadorFases;
+import com.tp2.megamanx.UtilitariosConexao.PlayerPosition;
+import com.tp2.megamanx.UtilitariosConexao.PosicaoTiro;
+import com.tp2.megamanx.UtilitariosConexao.VerificaGanhar;
 import com.tp2.megamanx.Inimigos.Pinguim;
 import com.badlogic.gdx.Gdx;
 import com.esotericsoftware.kryo.Serializer;
@@ -37,11 +42,11 @@ public class NetworkManager {
 
         for (int i = 0; i < 10 && !bound; i++) {
             int tcpPort = basePort + i;
-            int udpPort = tcpPort + 222; // 54777 - 54555 = 222
+            int udpPort = tcpPort + 222; 
             try {
-                server = new Server();   // Aumentar buffers para 1MB para evitar overflow
-                registerClasses(server); // Registra as classes que serão enviadas
-                server.start();          // Inicia o servidor
+                server = new Server();   
+                registerClasses(server); 
+                server.start();         
                 server.bind(tcpPort, udpPort);
                 bound = true;
                 Gdx.app.log("Network", "Server bound to ports TCP: " + tcpPort + ", UDP: " + udpPort);
@@ -56,20 +61,19 @@ public class NetworkManager {
         
         if (!bound) {
             Gdx.app.error("Network", "Failed to start server on any port");
-            server = null; // Disabilita o servidor se falhar
+            server = null;
         }
 
-        if (server != null) { // Se o servidor iniciou corretamente
-            server.addListener(new Listener() { // Adiciona um listener para receber mensagens
+        if (server != null) { 
+            server.addListener(new Listener() { 
                 @Override
                 public void connected(Connection connection) {
                     try {
-                        int clients = server.getConnections().length; // número de clientes conectados
+                        int clients = server.getConnections().length; 
                         Gdx.app.log("Network", "Client connected. total clients=" + clients);
-                        // Permitimos apenas 1 cliente além do servidor (total de players = 2)
                         if (clients > 1) {
-                            // Rejeita a nova conexão com uma mensagem amigável e fecha a conexão
                             ConnectionRejected rej = new ConnectionRejected("Nao foi possivel conectar, a sala ja tem 2 jogadores!");
+
                             try {
                                 connection.sendTCP(rej);
                             } catch (Throwable t) {
@@ -89,54 +93,65 @@ public class NetworkManager {
                 }
 
                 @Override
-                public void received(Connection connection, Object object) { // Quando uma mensagem é recebida
-                    if (object instanceof PlayerPosition) { // Se receber a posição do jogador
-                        PlayerPosition pos = (PlayerPosition) object; // Atualiza a posição do jogador remoto
-                        jogo.updateRemotePlayer(pos); // Atualiza a posição do jogador remoto
+                public void received(Connection connection, Object object) { 
+                    if (object instanceof PlayerPosition) {
+                        PlayerPosition pos = (PlayerPosition) object; 
+                        jogo.updateRemotePlayer(pos); 
                     } else if (object instanceof EnemyHit) {
                         EnemyHit hit = (EnemyHit) object;
-                        // Delegar ao jogo para aplicar o dano (servidor é autoritativo)
                         jogo.applyEnemyHit(hit.id, hit.damage);
-                    } else if (object instanceof PhaseChange) {
-                        PhaseChange pc = (PhaseChange) object;
-                        // Aplicar mudança de fase no jogo (agendar na thread principal)
-                        try {
-                            Gdx.app.postRunnable(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        if (pc.segundaFase) jogo.iniciarSegundaFase(false);
-                                    } catch (Throwable t) {
-                                        Gdx.app.error("Network", "Failed to apply PhaseChange on server: " + t.getMessage());
-                                    }
-                                }
-                            });
-                        } catch (Throwable t) {
-                            Gdx.app.error("Network", "Failed to post PhaseChange runnable on server: " + t.getMessage());
-                        }
+                    
                     }
                     else if (object instanceof PosicaoTiro) {
-                        // Recebeu tiro de um cliente: aplicar no jogo (agendando na thread principal)
-                        final PosicaoTiro pt = (PosicaoTiro) object;
+                        PosicaoTiro posicaoTiro = (PosicaoTiro) object;
                         try {
                             Gdx.app.postRunnable(new Runnable() {
                                 @Override
                                 public void run() {
                                     try {
-                                        jogo.handleIncomingTiro(pt);
+                                        jogo.desenhaTirosRemotos(posicaoTiro);
                                     } catch (Throwable t) {
-                                        Gdx.app.error("Network", "Failed to handle incoming tiro on server: " + t.getMessage());
+                                        t.printStackTrace();
                                     }
                                 }
                             });
                         } catch (Throwable t) {
-                            Gdx.app.error("Network", "Failed to post PosicaoTiro runnable on server: " + t.getMessage());
+                            t.printStackTrace();
                         }
-                        // Repassa para os demais clientes (exceto o remetente)
-                        try {
-                            if (server != null) server.sendToAllExceptTCP(connection.getID(), pt);
-                        } catch (Throwable t) {
-                            Gdx.app.error("Network", "Failed to forward PosicaoTiro to other clients: " + t.getMessage());
+                    }
+                    else if (object instanceof GerenciadorFases) {
+                        GerenciadorFases gerenciador = (GerenciadorFases) object;
+                        try{
+                            Gdx.app.postRunnable(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        jogo.gerenciadorFases.setFaseAtual(gerenciador.getFaseAtual());
+                                        jogo.iniciarSegundaFase(true);
+                                    } catch (Throwable t) {
+                                        t.printStackTrace();
+                                    }
+                                }
+                            });
+                        }catch (Throwable t) {
+                            t.printStackTrace();
+                        }
+                    }
+                    else if (object instanceof VerificaGanhar) {
+                        VerificaGanhar verificaGanhar = (VerificaGanhar) object;
+                        try{
+                            Gdx.app.postRunnable(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        jogo.setScreen(new TelaVitoria(jogo));
+                                    } catch (Throwable t) {
+                                        t.printStackTrace();
+                                    }
+                                }
+                            });
+                        }catch (Throwable t) {
+                            t.printStackTrace();
                         }
                     }
                 }
@@ -163,42 +178,40 @@ public class NetworkManager {
         }
         if (!connected) {
             Gdx.app.error("Network", "Failed to connect to server on any port");
-            client = null; //Disabilita o cliente se falhar
+            client = null; 
         }
 
         if (client != null) {
-            client.addListener(new Listener() { // Adiciona um listener para receber mensagens
-                public void received(Connection connection, Object object) { // Quando uma mensagem é recebida
-                    if (object instanceof PlayerPosition) { // Se receber a posição do jogador
-                        PlayerPosition pos = (PlayerPosition) object; // Atualiza a posição do jogador remoto
-                        jogo.updateRemotePlayer(pos); // Atualiza a posição do jogador remoto
-                    } else if (object instanceof EnemyPosition) { // Se receber a posição dos inimigos
-                        EnemyPosition pos = (EnemyPosition) object; // Atualiza a posição dos inimigos
-                        jogo.updateEnemies(pos); // Atualiza a posição dos inimigos
-                    } else if (object instanceof PinguinState) { // Recebe estado leve do pinguim
+            client.addListener(new Listener() { 
+                public void received(Connection connection, Object object) { 
+                    
+                    if (object instanceof PlayerPosition) { 
+                        PlayerPosition pos = (PlayerPosition) object;
+                        jogo.updateRemotePlayer(pos); 
+                    } 
+                    
+                    else if (object instanceof EnemyPosition) { 
+                        EnemyPosition pos = (EnemyPosition) object; 
+                        jogo.updateEnemies(pos); 
+                    } 
+                    
+                    else if (object instanceof PinguinState) { 
                         PinguinState st = (PinguinState) object;
-                        // Atualiza/Cria pinguim local sem depender de desserializar o objeto original
                         jogo.updatePinguinState(st);
-                    } else if (object instanceof PhaseChange) {
-                        final PhaseChange pc = (PhaseChange) object;
-                        try {
-                            Gdx.app.postRunnable(new Runnable() {
-                                @Override
-                                public void run() {
-                                    try {
-                                        if (pc.segundaFase) jogo.iniciarSegundaFase(false);
-                                    } catch (Throwable t) {
-                                        Gdx.app.error("Network", "Failed to apply PhaseChange on client: " + t.getMessage());
-                                    }
-                                }
-                            });
-                        } catch (Throwable t) {
-                            Gdx.app.error("Network", "Failed to post PhaseChange runnable on client: " + t.getMessage());
-                        }
-                    } else if (object instanceof ConnectionRejected) {
+                    } 
+                    
+                    else if (object instanceof SparkState) { 
+                        SparkState st = (SparkState) object;
+                        jogo.updateSparkState(st);
+                    } 
+                    
+                    else if (object instanceof VileState) { 
+                        VileState st = (VileState) object;
+                        jogo.updateVileState(st);
+                    } 
+                    
+                    else if (object instanceof ConnectionRejected) {
                         final ConnectionRejected cr = (ConnectionRejected) object;
-                        // NÃO criar objetos gráficos na thread do listener (causa crash GL)
-                        // Agendamos na thread principal do LibGDX
                         try {
                             Gdx.app.postRunnable(new Runnable() {
                                 @Override
@@ -216,45 +229,78 @@ public class NetworkManager {
                         try { client.close(); } catch (Throwable ignored) {}
                         client = null;
                     }
+
                     else if (object instanceof PosicaoTiro) {
-                        final PosicaoTiro pt = (PosicaoTiro) object;
+                        PosicaoTiro posicaoTiro = (PosicaoTiro) object;
                         try {
                             Gdx.app.postRunnable(new Runnable() {
                                 @Override
                                 public void run() {
                                     try {
-                                        jogo.handleIncomingTiro(pt);
+                                        jogo.desenhaTirosRemotos(posicaoTiro);
                                     } catch (Throwable t) {
-                                        Gdx.app.error("Network", "Failed to handle incoming tiro on client: " + t.getMessage());
+                                        t.printStackTrace();
                                     }
                                 }
                             });
                         } catch (Throwable t) {
-                            Gdx.app.error("Network", "Failed to post PosicaoTiro runnable on client: " + t.getMessage());
+                            t.printStackTrace();
                         }
                     }
-                    // outros tipos leves (PosicaoTiro, etc.) podem ser tratados aqui
+                    
+                    else if (object instanceof GerenciadorFases) {
+                        GerenciadorFases gerenciador = (GerenciadorFases) object;
+                        try{
+                            Gdx.app.postRunnable(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        jogo.gerenciadorFases.setFaseAtual(gerenciador.getFaseAtual());
+                                        jogo.iniciarSegundaFase(true);
+                                    } catch (Throwable t) {
+                                        t.printStackTrace();
+                                    }
+                                }
+                            });
+                        }catch (Throwable t) {
+                            t.printStackTrace();
+                        }
+                    }
+
+                    else if (object instanceof VerificaGanhar) {
+                        VerificaGanhar verificaGanhar = (VerificaGanhar) object;
+                        try{
+                            Gdx.app.postRunnable(new Runnable() {
+                                @Override
+                                public void run() {
+                                    try {
+                                        jogo.setScreen(new TelaVitoria(jogo));
+                                    } catch (Throwable t) {
+                                        t.printStackTrace();
+                                    }
+                                }
+                            });
+                        }catch (Throwable t) {
+                            t.printStackTrace();
+                        }
+                    }
+
                 }
             });
         }
     }
 
-    // ADDED: NullSerializer para evitar serializar recursos/problemáticas nativas (retorna null ao desserializar)
+
     private static class NullSerializer<T> extends Serializer<T> {
         @Override
-        public void write(com.esotericsoftware.kryo.Kryo kryo, Output output, T object) {
-            // intentionally write nothing
-        }
+        public void write(com.esotericsoftware.kryo.Kryo kryo, Output output, T object) {}
         @Override
         public T read(com.esotericsoftware.kryo.Kryo kryo, Input input, Class<T> type) {
             return null;
         }
     }
 
-    /* Registra as classes que serão enviadas */
     private void registerClasses(Object network) {
-        // Register only light-weight DTOs and basic Java types. Do NOT register LibGDX engine classes
-        // or game object classes that hold Textures/Sounds/etc. This avoids Kryo registration id mismatches.
         com.esotericsoftware.kryo.Kryo kryo;
         if (network instanceof Server) {
             kryo = ((Server) network).getKryo();
@@ -264,42 +310,37 @@ public class NetworkManager {
 
         try { kryo.setRegistrationRequired(false); } catch (Throwable ignored) {}
 
-        // DTOs used by the networking layer
         kryo.register(PlayerPosition.class);
         kryo.register(EnemyPosition.class);
-        kryo.register(PosicaoTiro.class); // if used
+        kryo.register(PosicaoTiro.class); 
         kryo.register(PinguinState.class);
+        kryo.register(VileState.class);
+        kryo.register(SparkState.class);
         kryo.register(EnemyHit.class);
-    kryo.register(PhaseChange.class);
-    kryo.register(ConnectionRejected.class);
+        kryo.register(ConnectionRejected.class);
+        kryo.register(GerenciadorFases.class);
+        kryo.register(VerificaGanhar.class);
+        kryo.register(Ataque.class);
 
-        // Basic collections/primitives used inside DTOs
         kryo.register(java.util.ArrayList.class);
         kryo.register(java.lang.Float.class);
         kryo.register(java.lang.Integer.class);
         kryo.register(float[].class);
         kryo.register(int[].class);
-
-        // If you later add new DTOs, register them here (both client and server must register same DTOs).
     }
 
-    // ADDED: tenta configurar DefaultInstantiatorStrategy com StdInstantiatorStrategy (Objenesis) via reflection.
     private void configureKryo(com.esotericsoftware.kryo.Kryo kryo) {
         try {
-            // Cria instância de org.objenesis.strategy.StdInstantiatorStrategy via reflection
             Class<?> stdClass = Class.forName("org.objenesis.strategy.StdInstantiatorStrategy");
             Object stdInstance = stdClass.getDeclaredConstructor().newInstance();
 
-            // Cria instância de com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy via reflection,
-            // passando o StdInstantiatorStrategy no construtor.
             Class<?> defaultStratClass = Class.forName("com.esotericsoftware.kryo.util.DefaultInstantiatorStrategy");
             java.lang.reflect.Constructor<?> ctor = defaultStratClass.getConstructor(stdClass.getInterfaces().length > 0 ? stdClass.getInterfaces()[0] : stdClass);
             Object defaultStrategyInstance;
+
             try {
-                // Tenta com o tipo concreto do parâmetro (caso seja exatamente org.objenesis.strategy.InstantiatorStrategy)
                 defaultStrategyInstance = ctor.newInstance(stdInstance);
             } catch (Exception nsme) {
-                // Fallback: tentar achar qualquer construtor e invocar
                 java.lang.reflect.Constructor<?>[] ctors = defaultStratClass.getConstructors();
                 if (ctors.length > 0) {
                     defaultStrategyInstance = ctors[0].newInstance(stdInstance);
@@ -308,7 +349,6 @@ public class NetworkManager {
                 }
             }
 
-            // Invoca kryo.setInstantiatorStrategy(...) por reflexão (procura método com 1 parâmetro)
             java.lang.reflect.Method setMethod = null;
             for (java.lang.reflect.Method m : kryo.getClass().getMethods()) {
                 if ("setInstantiatorStrategy".equals(m.getName()) && m.getParameterCount() == 1) {
@@ -322,19 +362,19 @@ public class NetworkManager {
             } else {
                 Gdx.app.log("Network", "Kryo.setInstantiatorStrategy method not found via reflection");
             }
+
         } catch (ClassNotFoundException cnf) {
             Gdx.app.log("Network", "Objenesis / Kryo util classes not found on classpath; Kryo may require no-arg constructors for some classes.");
         } catch (Throwable t) {
             Gdx.app.error("Network", "Failed to set Kryo instantiator strategy via reflection: " + t.getMessage());
             Gdx.app.error("Network", exceptionToString(t));
         }
+
         try {
-            // Fallback: não exigir registro estrito
             kryo.setRegistrationRequired(false);
         } catch (Throwable ignored) {}
     }
 
-    // Novo: registra um conjunto amplo de classes do pacote com.badlogic.gdx.graphics usando reflection
     private void registerGdxGraphicClasses(com.esotericsoftware.kryo.Kryo kryo) {
         String[] classes = new String[] {
             "com.badlogic.gdx.graphics.Color",
@@ -355,14 +395,14 @@ public class NetworkManager {
             "com.badlogic.gdx.graphics.FPSLogger",
             "com.badlogic.gdx.graphics.Pixmap$Blending",
             "com.badlogic.gdx.graphics.Pixmap$Filter",
-            "com.badlogic.gdx.graphics.g2d.TextureAtlas", // g2d often used; safe to try
-            // inner enum for Files
+            "com.badlogic.gdx.graphics.g2d.TextureAtlas", 
             "com.badlogic.gdx.Files$FileType"
         };
+
         for (String name : classes) {
             tryRegisterIfPresent(kryo, name);
         }
-        // também tentar registrar classes comuns do subpackage g2d (se desejar ampliar)
+
         String[] g2d = new String[] {
             "com.badlogic.gdx.graphics.g2d.TextureRegion",
             "com.badlogic.gdx.graphics.g2d.SpriteBatch",
@@ -370,28 +410,25 @@ public class NetworkManager {
             "com.badlogic.gdx.graphics.g2d.freetype.FreeTypeFontGenerator",
             "com.badlogic.gdx.graphics.g2d.TextureAtlas$TextureAtlasData"
         };
+
         for (String name : g2d) {
             tryRegisterIfPresent(kryo, name);
         }
     }
 
-    // Helper: tenta registrar uma classe no Kryo somente se ela existir no classpath
     private void tryRegisterIfPresent(com.esotericsoftware.kryo.Kryo kryo, String className) {
         try {
             Class<?> clazz = Class.forName(className);
             kryo.register(clazz);
             Gdx.app.log("Network", "Kryo registered class: " + className);
         } catch (ClassNotFoundException e) {
-            // Classe não presente no core (normal). Ignorar.
             Gdx.app.log("Network", "Class not present, skipping Kryo register: " + className);
         } catch (Throwable t) {
-            // Qualquer outro problema no registro: log e continue
             Gdx.app.error("Network", "Failed to register class via reflection: " + className + " -> " + t.getMessage());
             Gdx.app.error("Network", exceptionToString(t));
         }
     }
 
-    // ADDED: helper para converter stacktrace em String
     private String exceptionToString(Throwable t) {
         StringWriter sw = new StringWriter();
         PrintWriter pw = new PrintWriter(sw);
@@ -399,24 +436,22 @@ public class NetworkManager {
         return sw.toString();
     }
 
-    // Envia a posição do jogador (incluindo dados de animação) para o outro jogador
     public void sendPlayerPosition(PlayerPosition pos) {
         if (pos == null) return;
-        if (isServer && server != null) { // Se for o servidor
-            server.sendToAllTCP(pos); // Envia para todos os clientes conectados
-        } else if (!isServer && client != null) { // se for o cliente
-            client.sendTCP(pos); // Envia para o servidor
+        if (isServer && server != null) { 
+            server.sendToAllTCP(pos); 
+        } else if (!isServer && client != null) { 
+            client.sendTCP(pos); 
         }
     }
 
     public void sendEnemyPositions() {
-        if (isServer && server != null) { // Se for o servidor
-            EnemyPosition pos = jogo.getEnemyPositions(); // Pega a posição dos inimigos
-            server.sendToAllTCP(pos); // Envia para todos os clientes conectados
+        if (isServer && server != null) { 
+            EnemyPosition pos = jogo.getEnemyPositions(); 
+            server.sendToAllTCP(pos); 
         }
     }
     
-    // Envia apenas EnemyPosition (evita enviar InimigoIterator)
     public void sendInimigos(InimigoIterator inimigos){
         if (isServer && server != null) {
             EnemyPosition pos = jogo.getEnemyPositions();
@@ -424,25 +459,42 @@ public class NetworkManager {
         }
     }
 
-    // Envia apenas estado leve do pinguim (posição + vida)
-    public void sendPinguin(Pinguim penguin) {
+    public void sendTiroPositions(float x, float y, TipoAtaque tipo, boolean paraDireita) {
+        PosicaoTiro pos = new PosicaoTiro(x, y, tipo, paraDireita);
         if (isServer && server != null) {
-            if (penguin == null) return;
-            PinguinState st = new PinguinState(penguin.getPosX(), penguin.getPosY(), penguin.getVida());
-            server.sendToAllTCP(st);
+            server.sendToAllTCP(pos);
+        } else if (!isServer && client != null) {
+            client.sendTCP(pos);
         }
     }
 
-    public void sendTiroPositions(float x, float y, int id, int tipo, boolean paraDireita) {
-        PosicaoTiro pos = new PosicaoTiro(x, y, id, tipo, paraDireita); // Cria o objeto de posição do tiro
-        if (isServer && server != null) { // Se for o servidor
-            server.sendToAllTCP(pos); // Envia para todos os clientes conectados
-        } else if (!isServer && client != null) { // se for o cliente
-            client.sendTCP(pos); // Envia para o servidor
+    public void sendGerenciadorFases(GerenciadorFases gerenciadorFases) {
+        if (gerenciadorFases == null) return;
+        if (isServer && server != null) {
+            server.sendToAllTCP(gerenciadorFases);
+        } else if (!isServer && client != null) {
+            client.sendTCP(gerenciadorFases);
         }
     }
 
-    // Encerra a conexão de rede
+    public void sendGanhouJogo(VerificaGanhar verifica) {
+        if(verifica == null) return;
+        if (isServer && server != null) {
+            server.sendToAllTCP(verifica);
+        } else if (!isServer && client != null) {
+            client.sendTCP(verifica);
+        }
+    }
+
+    public void sendAtaque(Ataque ataque) {
+        if (ataque == null) return;
+        if (isServer && server != null) {
+            server.sendToAllTCP(ataque);
+        } else if (!isServer && client != null) {
+            client.sendTCP(ataque);
+        }
+    }
+
     public void dispose() {
         if (server != null) {
             server.stop();
@@ -452,7 +504,7 @@ public class NetworkManager {
         }
     }
 
-    // NEW: lightweight DTO para enviar estado do Pinguim (evita serializar Texture/recursos)
+    
     public static class PinguinState {
         public float x;
         public float y;
@@ -461,7 +513,22 @@ public class NetworkManager {
         public PinguinState(float x, float y, int vida) { this.x = x; this.y = y; this.vida = vida; }
     }
 
-	// NEW DTO: cliente -> servidor indica que um inimigo recebeu dano
+    public static class SparkState {
+        public float x;
+        public float y;
+        public int vida;
+        public SparkState() {}
+        public SparkState(float x, float y, int vida) { this.x = x; this.y = y; this.vida = vida; }
+    }
+
+    public static class VileState {
+        public float x;
+        public float y;
+        public int vida;
+        public VileState() {}
+        public VileState(float x, float y, int vida) { this.x = x; this.y = y; this.vida = vida; }
+    }
+
 	public static class EnemyHit {
 		public int id;
 		public int damage;
@@ -469,21 +536,12 @@ public class NetworkManager {
 		public EnemyHit(int id, int damage) { this.id = id; this.damage = damage; }
 	}
 
-    // DTO: indica mudança de fase (segundo nivel ativado/desativado)
-    public static class PhaseChange {
-        public boolean segundaFase;
-        public PhaseChange() {}
-        public PhaseChange(boolean segundaFase) { this.segundaFase = segundaFase; }
-    }
-
-    // DTO: servidor -> cliente informa que a conexão foi recusada
     public static class ConnectionRejected {
         public String message;
         public ConnectionRejected() {}
         public ConnectionRejected(String message) { this.message = message; }
     }
 
-	// Envia evento de hit (cliente -> servidor)
 	public void sendEnemyHit(int enemyId, int damage) {
 		if (!isServer && client != null) {
 			EnemyHit hit = new EnemyHit(enemyId, damage);
@@ -494,20 +552,11 @@ public class NetworkManager {
 			}
 
 		} else if (isServer && server != null) {
-			// Se estiver rodando em modo servidor local (diagnóstico), processa direto
+
 			jogo.applyEnemyHit(enemyId, damage);
-			// e envia atualização de inimigos para clientes
+
 			server.sendToAllTCP(jogo.getEnemyPositions());
 		}
-	}
-
-        // Envia evento de mudança de fase (servidor->cliente ou cliente->servidor)
-        public void sendPhaseChange(boolean segundaFase) {
-            PhaseChange pc = new PhaseChange(segundaFase);
-            if (isServer && server != null) {
-                server.sendToAllTCP(pc);
-            } else if (!isServer && client != null) {
-                client.sendTCP(pc);
-            }
-        }
+	}   
+    
 }

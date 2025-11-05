@@ -3,7 +3,7 @@ package com.tp2.megamanx;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
-public class Ataque extends Entidade {
+public class Ataque extends Entidade /*implements java.io.Serializable*/ {
 
 	private TipoAtaque tipo;           
 	private float velocidade;          

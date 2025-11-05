@@ -219,40 +219,42 @@ public class MegaMan extends Personagem {
         }
     }
 
-    // Tirar do jogo por bug
     private void dashParaDireita() {
-        if(testarTecla(Input.Keys.RIGHT) && testarTecla(Input.Keys.SHIFT_LEFT)){
-            paraDireita = true;
-            apertouRight = true;
-            apertouShift = true;
-            velX = 5;
-            posX = posX + velX;
-            setPosicao(posX, posY);
-            animar(posX, 1, 49, 1890, 19, 49, 31);
-        }else{
-            if(apertouRight && apertouShift){
-                setRegion(0, 16, 34, 34); 
-                apertouRight = false;
-                apertouShift = false;
+        if(podeAndarDireita){
+            if(testarTecla(Input.Keys.RIGHT) && testarTecla(Input.Keys.SHIFT_LEFT)){
+                paraDireita = true;
+                apertouRight = true;
+                apertouShift = true;
+                velX = 5;
+                posX = posX + velX;
+                setPosicao(posX, posY);
+                animar(posX, 1, 49, 1890, 19, 49, 31);
+            }else{
+                if(apertouRight && apertouShift){
+                    setRegion(0, 16, 34, 34); 
+                    apertouRight = false;
+                    apertouShift = false;
+                }
             }
         }
     }
 
-    // Tirar do jogo por bug
     private void dashParaEsquerda(){
-        if(testarTecla(Input.Keys.LEFT) && testarTecla(Input.Keys.SHIFT_LEFT)){
-            paraDireita = false;
-            apertouLeft = true;
-            apertouShift = true;
-            velX = -5;
-            posX = posX + velX;
-            setPosicao(posX, posY);
-            animar(posX, 1, 49, 1890, 19, 49, 31);
-        }else{
-            if(apertouLeft && apertouShift){
-                setRegion(0, 16, 34, 34); 
-                apertouLeft = false;
-                apertouShift = false;
+        if(podeAndarEsquerda){
+            if(testarTecla(Input.Keys.LEFT) && testarTecla(Input.Keys.SHIFT_LEFT)){
+                paraDireita = false;
+                apertouLeft = true;
+                apertouShift = true;
+                velX = -5;
+                posX = posX + velX;
+                setPosicao(posX, posY);
+                animar(posX, 1, 49, 1890, 19, 49, 31);
+            }else{
+                if(apertouLeft && apertouShift){
+                    setRegion(0, 16, 34, 34); 
+                    apertouLeft = false;
+                    apertouShift = false;
+                }
             }
         }
     }
