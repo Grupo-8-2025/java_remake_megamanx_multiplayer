@@ -1,4 +1,4 @@
-package com.tp2.megamanx.inimigos;
+package com.tp2.megamanx.Inimigos;
 
 import com.tp2.megamanx.Ataque;
 
@@ -6,7 +6,7 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
-public class Spark extends Boss {
+public class Spark extends Boss{
 
     public Spark(Texture textura, Ataque ataque) {
         
@@ -17,16 +17,17 @@ public class Spark extends Boss {
 
     public void atualizar(){
         if(!morreu && Math.abs(posMegaMan.x - posX) < 600){
+
             sofrerGravidade(posY, 1, 0, 0, 0, 56, 64, 0, 0, 56, 64); 
+            
+            tomandoDanoPorAtaque(3, 56, 0, 0, 56, 64, 
+            0, 0, 56, 64); 
 
             delimitarMovimento(10600, 11855); 
 
             int acaoAnterior = determinaAcao;
             iterarDeltaTime(); 
             atualizarAcao(); 
-
-            tomandoDanoPorAtaque(3, 56, 0, 0, 56, 64, 
-            0, 0, 56, 64); 
             
             if(!noAr){
                 if(determinaAcao != acaoAnterior){
@@ -37,16 +38,12 @@ public class Spark extends Boss {
                     }else if(determinaAcao == 2){
                         determinarAcaoAtaque();
                     } 
+                } else{
+                    atualizarAcao();
                 }
             }
 
         }
-    }
-
-    private void determinarAcaoAtaque(){
-        duracaoAcao = 2f;
-        podeAtacar = true;
-        podeMover = false;
     }
 
     @Override
@@ -97,21 +94,20 @@ public class Spark extends Boss {
             );
 
             novoAtaque.setColidiu(false);
-            novoAtaque.setPodeDisparar(true);
+            novoAtaque.setPodeMovimentar(true);
             ataquesAtivos.add(novoAtaque);
         }
     }
-
 
     @Override
     public void morrer(){
         if(vida <= 0){
             morreu = true;
-            iterarDeltaTime();
             setRegion(0, 0, 56, 64); 
-            if (deltaTime >= 3.0f) {
-                setPosicao(-500, -500); 
-            }
+            iterarDeltaTime();
+            //if (deltaTime >= 3.5f) {
+                //setPosicao(-500, -500); 
+            //}
         }
     }
 

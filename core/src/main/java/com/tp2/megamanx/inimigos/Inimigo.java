@@ -1,4 +1,4 @@
-package com.tp2.megamanx.inimigos;
+package com.tp2.megamanx.Inimigos;
 
 import java.util.ArrayList;
 
@@ -14,6 +14,8 @@ public interface Inimigo {
     public int getDano();
 
     public ArrayList<Ataque> getAtaquesAtivos();
+
+    public Vector2 getPosicao();
 
     public void setPosicaoMegaMan(Vector2 posMegaMan);
 

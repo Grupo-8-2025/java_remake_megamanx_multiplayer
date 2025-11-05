@@ -27,7 +27,7 @@ public class TelaVitoria implements Screen {
         this.jogo = jogo;
         batch = new SpriteBatch(); 
         shapeRenderer = new ShapeRenderer();
-        imgFundo = new Texture("assets/imagens/Mega_Man_X_Logo.png"); 
+        imgFundo = new Texture("assets/imagens/mega_man_logo.png"); 
 
         // Configuração da fonte personalizada
         fontGenerator = new FreeTypeFontGenerator(Gdx.files.internal("font.ttf"));
@@ -47,7 +47,7 @@ public class TelaVitoria implements Screen {
 
         batch.begin();
         batch.draw(imgFundo, 0, 350);
-        font.draw(batch, "Parabéns! Você ganhou", 350, 400);
+        font.draw(batch, "Parabéns! Voce ganhou", 350, 400);
         batch.end();
 
         botaoJogarNovamente.desenhar(shapeRenderer, batch, font);
@@ -55,14 +55,14 @@ public class TelaVitoria implements Screen {
 
         if (botaoJogarNovamente.foiClicado()) {
             jogo.reset();
-            jogo.setSegundaFaseAtivada(false);
-            jogo.setJogoIniciado(true);
+            jogo.setFase(1);
+            jogo.iniciarJogo();
             jogo.setScreen(null);
         }
 
         if (botaoInicio.foiClicado()) {
             jogo.reset(); 
-            jogo.setSegundaFaseAtivada(false);
+            jogo.setFase(1);
             jogo.setScreen(new TelaInicial(jogo)); 
         }
 

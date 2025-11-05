@@ -2,149 +2,146 @@ package com.tp2.megamanx;
 
 import java.util.ArrayList;
 
+import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
 public class Personagem extends Entidade {
 
-    protected ArrayList<Ataque> ataquesAtivos;
-    protected Ataque ataqueAtual;
     protected int vida;
     protected int dano;
     protected float velX;
     protected float velY;
-
+    protected Ataque ataqueAtual;
+    protected ArrayList<Ataque> ataquesAtivos;
     protected Vector2 posMegaMan;
+    protected float deltaTime; 
 
     protected boolean tomandoDano;         
-    protected boolean naPlataforma;        
+    protected boolean naPlataforma;  
+    protected boolean noAr;      
     protected boolean podeAndarDireita;    
-    protected boolean podeAndarEsquerda;   
-    protected boolean noAr;                
-    protected boolean morreu;              
+    protected boolean podeAndarEsquerda;                   
+    protected boolean morreu;        
 
 
-    public Personagem(Texture textura, TextureRegion region, Vector2 escala, float posX, float posY, int vida, int dano, Ataque ataque) {
+    public Personagem(Texture textura, TextureRegion region, Vector2 escala, float posX, float posY, int vida, int dano, Ataque ataque, Vector2 posMegaMan) {
         
         super(textura, region, escala, posX, posY); 
 
-        this.ataqueAtual = ataque;
         this.vida = vida;
         this.dano = dano;
         this.velX = 0;
         this.velY = 0;
-        posMegaMan = new Vector2();
+        this.ataqueAtual = ataque;
         ataquesAtivos = new ArrayList<>();
+        this.posMegaMan = posMegaMan;
+        deltaTime = 0f;
+
         inicializarAtributosBooleanos();
     }
 
-    public Personagem(Texture textura, TextureRegion region, Vector2 escala, float posX, float posY, int vida, int dano) {
+    public Personagem(Texture textura, TextureRegion region, Vector2 escala, float posX, float posY, int vida, int dano, Vector2 posMegaMan) {
         
         super(textura, region, escala, posX, posY); 
 
-        this.ataqueAtual = null;
         this.vida = vida;
         this.dano = dano;
         this.velX = 0;
         this.velY = 0;
-        posMegaMan = new Vector2();
+        this.ataqueAtual = null;
         ataquesAtivos = new ArrayList<>();
+        this.posMegaMan = posMegaMan;
+
         inicializarAtributosBooleanos();
     }
 
     private void inicializarAtributosBooleanos(){
         tomandoDano = false;
         naPlataforma = false;
+        noAr = true;
         podeAndarDireita = true;
-        podeAndarEsquerda = true;
-        noAr = true; 
+        podeAndarEsquerda = true; 
         morreu = false;
     }
 
-    public Ataque getAtaque(){
-        return ataqueAtual;
+
+    public Ataque getAtaque(){ return ataqueAtual; }
+
+    public ArrayList<Ataque> getAtaquesAtivos(){ return ataquesAtivos; }
+
+    public int getVida() { return vida; }
+
+    public void setVida(int vida){
+        this.vida = vida;
     }
 
-    public ArrayList<Ataque> getAtaquesAtivos(){
-        return ataquesAtivos;
-    }
+    public int getDano() { return dano; }
 
-    public int getVida() {
-        return vida;
-    }
-
-    public int getDano() {
-        return dano;
-    }
-
-    public float getVelX() {
-        return velX;
-    }
+    public float getVelX() { return velX; }
 
     public void setVelX(float velX) {
         this.velX = velX;
     }
 
-    public float getVelY() {
-        return velY;
-    }
+    public float getVelY() { return velY; }
 
     public void setVelY(float velY) {
         this.velY = velY;
     }
 
-    public boolean isMorreu() {
-        return morreu;
+    public float getDeltaTime() {
+        return deltaTime;
     }
 
-    public boolean isNaPlataforma() {
-        return naPlataforma;
+    public void setDeltaTime(float deltaTime) {
+        this.deltaTime = deltaTime;
     }
+
+    public boolean isNaPlataforma() { return naPlataforma; }
 
     public void setNaPlataforma(boolean naPlataforma) {
         this.naPlataforma = naPlataforma;
+    }
+
+    public boolean isNoAr() { return noAr; }
+
+    public void setNoAr(boolean noAr) {
+        this.noAr = noAr;
     }
 
     public void setPodeAndarDireita(boolean podeAndarDireita) {
         this.podeAndarDireita = podeAndarDireita;
     }
 
-    public void setVida(int vida){
-        this.vida = vida;
-    }
-
     public void setPodeAndarEsquerda(boolean podeAndarEsquerda) {
         this.podeAndarEsquerda = podeAndarEsquerda;
     }
 
+    public boolean isMorreu() { return morreu; }
 
-
-    public boolean isNoAr() {
-        return noAr;
+    public void setMorreu(boolean morreu){
+        this.morreu = morreu;
     }
 
-    public void setNoAr(boolean noAr) {
-        this.noAr = noAr;
-    }
     
+    protected void iterarDeltaTime() {
+		deltaTime += Gdx.graphics.getDeltaTime();
+	}
+
     public void mover() {}
 
     public void atacar(){}
 
     public void morrer(){
         if(vida <= 0 || (posMegaMan.x > posX + 450)){
-            morreu = true;
+            morreu = true; // não influencia no jogo para personagens que não sejam Boss ou MegaMan
             setPosicao(-500, -500);
         }
     }
 
-    public void tomarDano(int dano) {
-        vida = vida - dano;
-        tomandoDano = true;
-        deltaTime = 0f;
-    }
-
+    
     public void tomandoDanoPorAtaque(int qtdFrames, int incrementa, int cordX1, int cordY1, int largura1, int altura1, int cordX2, int cordY2, int largura2, int altura2){
         if (tomandoDano) {
             iterarDeltaTime();
@@ -159,10 +156,10 @@ public class Personagem extends Entidade {
 
     protected void sofrerGravidade(float posicaoY, int qtdFrames, int incrementa, int cordX1, int cordY1, int largura1, int altura1, int cordX2, int cordY2, int largura2, int altura2) {
         if(noAr && !naPlataforma){
-            velY = velY - (0.3f * 0.5f); // Aplica gravidade
+            velY = velY - (0.3f * 0.5f); 
             setPosicao(posX, posY + velY);    
 
-            animar(posicaoY, qtdFrames, incrementa, cordX1, cordY1, largura1, altura1); // Animação de queda
+            animar(posicaoY, qtdFrames, incrementa, cordX1, cordY1, largura1, altura1); 
 
             if (naPlataforma) {
                 velY = 0;
@@ -172,5 +169,12 @@ public class Personagem extends Entidade {
 
         }
     }
+
+    public void animar(int qtdFrames, int incrementa, int cordX, int cordY, int largura, int altura) {
+		iterarDeltaTime();
+		int frame = (int)(deltaTime / 0.25f) % qtdFrames; 
+        int x = frame * incrementa; 
+        setRegion(cordX + x, cordY, largura, altura); 
+	}
 
 }

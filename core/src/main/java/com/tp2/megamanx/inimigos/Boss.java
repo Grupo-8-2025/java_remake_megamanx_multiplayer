@@ -1,4 +1,7 @@
-package com.tp2.megamanx.inimigos;
+package com.tp2.megamanx.Inimigos;
+
+import com.tp2.megamanx.Ataque;
+import com.tp2.megamanx.Personagem;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -7,58 +10,54 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Rectangle;
 import com.badlogic.gdx.math.Vector2;
-import com.tp2.megamanx.Ataque;
-import com.tp2.megamanx.Personagem;
 
 public class Boss extends Personagem implements Inimigo {
 
-    protected Random random;
     protected int quantAcoes;
     protected int determinaAcao;
     protected float duracaoAcao;
     protected boolean podeMover;
     protected boolean podeAtacar;
+    protected Random random;
 
     public Boss(Texture textura, TextureRegion region, Vector2 escala, float posX, float posY, int vida, 
                 int dano, Ataque ataque){
 
-        super(textura, region, escala, posX, posY, vida, dano, ataque);
+        super(textura, region, escala, posX, posY, vida, dano, ataque, new Vector2(0, 0));
         
-        random = new Random();
-        quantAcoes = 4;
+        quantAcoes = 4; // Tem que ver isso
         determinaAcao = 0;
         duracaoAcao = 0;
         podeMover = false;
         podeAtacar = false;
+        random = new Random();
+
         paraDireita = false;
     }
 
     public Boss(Texture textura, TextureRegion region, Vector2 escala, float posX, float posY, int vida, 
                 int dano){
 
-        super(textura, region, escala, posX, posY, vida, dano);
+        super(textura, region, escala, posX, posY, vida, dano, new Vector2(0, 0));
         
-        random = new Random();
-        quantAcoes = 4;
+        quantAcoes = 3; 
         determinaAcao = 0;
         duracaoAcao = 0;
         podeMover = false;
         podeAtacar = false;
+        random = new Random();
+
         paraDireita = false;
     }
 
 
-    public Rectangle getRect(){
-        return corpo.getBoundingRectangle();
-    }
+    public Rectangle getRect(){ return corpo.getBoundingRectangle(); }
 
-    public int getDano() {
-        return dano;
-    }
+    public int getDano() { return dano; }
 
-    public ArrayList<Ataque> getAtaquesAtivos(){
-        return ataquesAtivos;
-    }
+    public ArrayList<Ataque> getAtaquesAtivos(){ return ataquesAtivos; }
+
+    public Vector2 getPosicao(){ return new Vector2(posX, posY); }
 
     public void setPosicaoMegaMan(Vector2 posMegaMan) {
         this.posMegaMan = posMegaMan;
@@ -70,6 +69,13 @@ public class Boss extends Personagem implements Inimigo {
         deltaTime = 0f;
     }
 
+
+    protected void atualizarAcao() {
+        if (deltaTime >= duracaoAcao) {
+            determinaAcao = random.nextInt(quantAcoes);
+            deltaTime = 0f; 
+        }
+    }
 
     protected void determinarAcaoMover(){
         duracaoAcao = 3.0f;
@@ -83,6 +89,12 @@ public class Boss extends Personagem implements Inimigo {
         podeMover = false;
     }
 
+    protected void determinarAcaoAtaque(){
+        duracaoAcao = 2f;
+        podeAtacar = true;
+        podeMover = false;
+    }
+
     protected void delimitarMovimento(float posXlimite1, float posXlimite2){
         if(posX <= posXlimite1){
             paraDireita = true;
@@ -90,13 +102,6 @@ public class Boss extends Personagem implements Inimigo {
         } else if(posX >= posXlimite2){
             paraDireita = false;
             podeMover = false;
-        }
-    }
-
-    protected void atualizarAcao() {
-        if (deltaTime >= duracaoAcao) {
-            determinaAcao = random.nextInt(quantAcoes);
-            deltaTime = 0f; 
         }
     }
 

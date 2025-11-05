@@ -1,58 +1,51 @@
 package com.tp2.megamanx;
 
+import java.util.ArrayList;
+
 import com.badlogic.gdx.Gdx;
 import com.badlogic.gdx.Input;
 import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
-import java.util.ArrayList;
-
-
 public class MegaMan extends Personagem { 
 
     private int indexAtaqueAtual;                   
     private ArrayList<Ataque> tiposAtaque;              
-    private float tempoInvulneravel = 0f;           // Tempo restante de invulnerabilidade após tomar dano
-    private final float TEMPORECUO = 4f;            // Duração da invulnerabilidade após dano
+    private float tempoRestanteDeInvulnerabilidade = 0f;           
+    private final float tempoInvulneravel = 3.5f;            
 
     private boolean apertouRight;
     private boolean apertouLeft;
     private boolean apertouUp;
     private boolean apertouX;
     private boolean apertouShift;
-
-    private boolean naEscada;      
     private boolean naParede;                            
-    private boolean colidiuInimigo;                 
-    private boolean jaTomouDano;                    
-    private boolean tomandoDano;                   
-    private boolean ganhouJogo;      
-    private boolean podeVoltarInicio;               
+ 
 
     public MegaMan(Texture textura, float posX, float posY) {
+        super(
+            textura, new TextureRegion(textura, 0, 0, 34, 46), 
+            new Vector2(0.03f, 1.5f), // escala
+            posX, posY, 16, 0,
+            null
+        );
 
-        super(textura, new TextureRegion(textura, 0, 0, 34, 46), 
-        new Vector2(0.03f, 1.5f), posX, posY, 16, 0);
+        inicializarAtributosBooleanos();
+        criarAtaques(); 
+    }
 
+    private void inicializarAtributosBooleanos(){
         apertouRight = false;
         apertouLeft = false;
         apertouUp = false;
         apertouX = false;
         apertouShift = false;
-        naEscada = false;
-        naParede = false;
-        podeAndarDireita = true;
-        podeAndarEsquerda = true;
-        colidiuInimigo = false;
-        jaTomouDano = false;
-        tomandoDano = false;
-        ganhouJogo = false;
-        podeVoltarInicio = false;
         naParede = false;
 
+        podeAndarDireita = true;
+        podeAndarEsquerda = true;
         paraDireita = true;
-        criarAtaques(); 
     }
 
     public void criarAtaques(){
@@ -89,30 +82,13 @@ public class MegaMan extends Personagem {
         ataqueAtual = tiposAtaque.get(0); 
     }
 
-    public ArrayList<Ataque> getAtaquesAtivos(){
-        return ataquesAtivos;
-    }
 
-    // Getters e setters para flags de estado
-    public boolean isNaEscada() { return naEscada; }
-    public void setNaEscada(boolean naEscada) { this.naEscada = naEscada; }
-    public boolean isColidiuInimigo() { return colidiuInimigo; }
-    public void setColidiuInimigo(boolean colidiuInimigo) { this.colidiuInimigo = colidiuInimigo; }
-    public boolean isJaTomouDano() { return jaTomouDano; }
-    public void setJaTomouDano(boolean jaTomouDano) { this.jaTomouDano = jaTomouDano; }
-    public boolean isTomandoDano() { return tomandoDano; }
-    public void setTomandoDano(boolean tomandoDano) { this.tomandoDano = tomandoDano; }
-    public boolean isGanhouJogo() { return ganhouJogo; }
-    public void setGanhouJogo(boolean ganhouJogo) { this.ganhouJogo = ganhouJogo; }
-
-        public boolean isNaParede() {
-        return naParede;
-    }
+    public ArrayList<Ataque> getAtaquesAtivos(){ return ataquesAtivos; }
 
     public void setNaParede(boolean naParede) {
         this.naParede = naParede;
     }
-
+    
     @Override
     protected void setRegion(int cordX, int cordY, int largura, int altura) {
 		region.setRegion(cordX, cordY, largura, altura);
@@ -125,19 +101,12 @@ public class MegaMan extends Personagem {
 		corpo.setRegion(region);
 	}
 
+
     public boolean testarTecla(int tecla) {
         if(Gdx.input.isKeyPressed(tecla)){
             return true;
         }else{
             return false;
-        }
-    }
-
-    public void confereMortePorQueda(){
-        if (getPosX() <= -100) {
-            vida--;
-        }if(getPosY() <= 0){
-            vida--;
         }
     }
 
@@ -148,15 +117,14 @@ public class MegaMan extends Personagem {
         moverParaEsquerda();
         pular();
         subirParede();
-        descerParede();
         dashParaDireita();
         dashParaEsquerda();
-        if (tempoInvulneravel > 0) {
-            tempoInvulneravel -= deltaTime;
-        }
-        tomandoDanoPorAtaque(3, 32, 2302, 0, 32, 50, 0, 16, 34, 34);
 
-        //System.err.println(posX + ", " + posY);
+        if (tempoRestanteDeInvulnerabilidade > 0) {
+            tempoRestanteDeInvulnerabilidade -= deltaTime;
+        }
+
+        tomandoDanoPorAtaque(3, 32, 2302, 0, 32, 50, 0, 16, 34, 34);
     }
 
     private void paradoAtirando(){
@@ -237,12 +205,12 @@ public class MegaMan extends Personagem {
     }
 
     private void subirParede() {
-        if (isNaParede() && isNoAr() && Gdx.input.isKeyPressed(Input.Keys.UP)) {
+        if (naParede && isNoAr() && Gdx.input.isKeyPressed(Input.Keys.UP)) {
             apertouUp = true;
             velY = 3;
             posY += velY;
             setPosicao(posX, posY);
-            setRegion(1475, 0, 21, 50);
+            setRegion(863, 0, 21, 50); // Mexer nisso
         }else{
             if(apertouUp){
                 setRegion(0, 16, 34, 34); 
@@ -251,54 +219,43 @@ public class MegaMan extends Personagem {
         }
     }
 
-    private void descerParede() {}
-
     private void dashParaDireita() {
-        if(testarTecla(Input.Keys.RIGHT) && testarTecla(Input.Keys.SHIFT_LEFT)){
-            paraDireita = true;
-            apertouRight = true;
-            apertouShift = true;
-            velX = 5;
-            posX = posX + velX;
-            setPosicao(posX, posY);
-            animar(posX, 1, 49, 1890, 19, 49, 31);
-        }else{
-            if(apertouRight && apertouShift){
-                setRegion(0, 16, 34, 34); 
-                apertouRight = false;
-                apertouShift = false;
+        if(podeAndarDireita){
+            if(testarTecla(Input.Keys.RIGHT) && testarTecla(Input.Keys.SHIFT_LEFT)){
+                paraDireita = true;
+                apertouRight = true;
+                apertouShift = true;
+                velX = 5;
+                posX = posX + velX;
+                setPosicao(posX, posY);
+                animar(posX, 1, 49, 1890, 19, 49, 31);
+            }else{
+                if(apertouRight && apertouShift){
+                    setRegion(0, 16, 34, 34); 
+                    apertouRight = false;
+                    apertouShift = false;
+                }
             }
         }
     }
 
     private void dashParaEsquerda(){
-        if(testarTecla(Input.Keys.LEFT) && testarTecla(Input.Keys.SHIFT_LEFT)){
-            paraDireita = false;
-            apertouLeft = true;
-            apertouShift = true;
-            velX = -5;
-            posX = posX + velX;
-            setPosicao(posX, posY);
-            animar(posX, 1, 49, 1890, 19, 49, 31);
-        }else{
-            if(apertouLeft && apertouShift){
-                setRegion(0, 16, 34, 34); 
-                apertouLeft = false;
-                apertouShift = false;
+        if(podeAndarEsquerda){
+            if(testarTecla(Input.Keys.LEFT) && testarTecla(Input.Keys.SHIFT_LEFT)){
+                paraDireita = false;
+                apertouLeft = true;
+                apertouShift = true;
+                velX = -5;
+                posX = posX + velX;
+                setPosicao(posX, posY);
+                animar(posX, 1, 49, 1890, 19, 49, 31);
+            }else{
+                if(apertouLeft && apertouShift){
+                    setRegion(0, 16, 34, 34); 
+                    apertouLeft = false;
+                    apertouShift = false;
+                }
             }
-        }
-    }
-
-    public void tomarDanoPorContato(float dano) {
-        if (tempoInvulneravel <= 0) {
-            vida -= dano;
-            animar(11, 33, 1939, 0, 33, 50);
-            if (paraDireita) {
-                setPosicao(posX - 25, posY);
-            } else if (!paraDireita) {
-                setPosicao(posX + 25, posY);
-            }
-            tempoInvulneravel = TEMPORECUO; 
         }
     }
 
@@ -328,7 +285,7 @@ public class MegaMan extends Personagem {
             );
             
             novoAtaque.setColidiu(false);
-            novoAtaque.setPodeDisparar(true);
+            novoAtaque.setPodeMovimentar(true);
             ataquesAtivos.add(novoAtaque);
         }
         mudarAtaque();    
@@ -344,29 +301,42 @@ public class MegaMan extends Personagem {
         }
     }
 
-    public void setMorreu(boolean morreu){
-        this.morreu = morreu;
-    }
-
-    public boolean isPodeVoltarInicio() {
-        return podeVoltarInicio;
-    }
-
-    public void setPodeVoltarInicio(boolean podeVoltarInicio) {
-        this.podeVoltarInicio = podeVoltarInicio;
-    }
-
     @Override
     public void morrer(){
         if(vida <= 0){
             morreu = true;
-            /* 
-            iterarDeltaTime();
             setRegion(2398, 0, 35, 50);
-            if (deltaTime >= 5.0f) {
-                setPodeVoltarInicio(true);
+            iterarDeltaTime();
+            //if (deltaTime >= 3.5f) {
+                //setPodeVoltarInicio(true);
+            //}
+        }
+    }
+
+    public void confereMortePorQueda(){
+        if (getPosX() <= -100) {
+            vida--;
+        }if(getPosY() <= 0){
+            vida--;
+        }
+    }
+
+    public void tomarDano(int dano) {
+        vida = vida - dano;
+        tomandoDano = true;
+        deltaTime = 0f;
+    }
+
+    public void tomarDanoPorContato(float dano) {
+        if (tempoRestanteDeInvulnerabilidade <= 0) {
+            vida -= dano;
+            animar(11, 33, 1939, 0, 33, 50);
+            if (paraDireita) {
+                setPosicao(posX - 25, posY);
+            } else if (!paraDireita) {
+                setPosicao(posX + 25, posY);
             }
-            */
+            tempoRestanteDeInvulnerabilidade = tempoInvulneravel; 
         }
     }
 

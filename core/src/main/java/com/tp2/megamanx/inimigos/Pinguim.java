@@ -1,4 +1,7 @@
-package com.tp2.megamanx.inimigos;
+package com.tp2.megamanx.Inimigos;
+
+import com.tp2.megamanx.Ataque;
+import com.tp2.megamanx.TipoAtaque;
 
 import java.util.ArrayList;
 
@@ -6,25 +9,25 @@ import com.badlogic.gdx.graphics.Texture;
 import com.badlogic.gdx.graphics.g2d.TextureRegion;
 import com.badlogic.gdx.math.Vector2;
 
-import com.tp2.megamanx.Ataque;
-import com.tp2.megamanx.TipoAtaque;
-
-public class Pinguim extends Boss {
+public class Pinguim extends Boss{
 
     private int indexAtaqueAtual;
     private ArrayList<Ataque> tiposAtaque;
 
     public Pinguim(Texture textura) {
+        super(
+            textura, new TextureRegion(textura, 602, 16, 43, 44), 
+            new Vector2(0.1f, 2.0f), // escala
+            11635, 3000, 32, 5
+        );    
         
-        super(textura, new TextureRegion(textura, 602, 16, 43, 44), 
-        new Vector2(0.1f, 2.0f), 11635, 3000, 32, 5);    
-        
+        quantAcoes = 4;
         criarAtaques(); 
     }
 
     public void criarAtaques(){
-        tiposAtaque = new ArrayList<>();
         indexAtaqueAtual = 0;
+        tiposAtaque = new ArrayList<>();
 
         tiposAtaque.add(
             new Ataque(
@@ -52,7 +55,7 @@ public class Pinguim extends Boss {
             )
         );
 
-        ataqueAtual = tiposAtaque.get(0); // Ataque inicial
+        ataqueAtual = tiposAtaque.get(0); 
     }
 
     public void atualizar(){
@@ -80,7 +83,9 @@ public class Pinguim extends Boss {
                     }else if(determinaAcao == 3){
                         determinarAtaqueSoproGelo();
                     }
-                } 
+                } else {
+                    atualizarAcao();
+                }
             }
 
         }
@@ -151,7 +156,7 @@ public class Pinguim extends Boss {
             );
 
             novoAtaque.setColidiu(false);
-            novoAtaque.setPodeDisparar(true);
+            novoAtaque.setPodeMovimentar(true);
             ataquesAtivos.add(novoAtaque);
         }
     }
@@ -160,11 +165,11 @@ public class Pinguim extends Boss {
     public void morrer(){
         if(vida <= 0){
             morreu = true;
-            iterarDeltaTime();
             setRegion(774, 13, 43, 47); 
-            if (deltaTime >= 5.0f) {
-                setPosicao(-500, -500); 
-            }
+            iterarDeltaTime();
+            //if (deltaTime >= 3.5f) {
+                //setPosicao(-500, -500); 
+            //}
         }
     }
 
