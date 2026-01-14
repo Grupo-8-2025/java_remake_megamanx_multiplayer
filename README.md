@@ -1,33 +1,52 @@
-<<<<<<< Updated upstream
-# TrabalhoPratico2
-Esse repositório trata-se dos arquivos relacionados ao Trabalho Pratico 2 de LLP2 sobre o tema Mega Man X seguindo o padrão Iterator
-=======
-# Jogo-MegaManX
+# 🎮 Remake MegaManX 🎮
 
-A [libGDX](https://libgdx.com/) project generated with [gdx-liftoff](https://github.com/libgdx/gdx-liftoff).
+Bem-vindo ao repositório **Remake MegaManX Multiplayer**! Este projeto foi desenvolvido como trabalho prático da matéria Linguagem e Técnicas de Programação 2 no curso técnico de informática do CEFET-MG.
+O jogo desenvolvido é baseado no primeiro jogo da clássica série de jogos **Mega Man X**. Ele representa uma evolução do remake feito em link repositório, com melhorias no código, adição de segunda fase e modo multiplayer, utilizando **Java RMI**. 
 
-This project was generated with a template including simple application launchers and a main class extending Game that sets the first screen.
+---
 
-## Como Jogar
+## 🚀 Tecnologias Utilizadas
 
-- Use as *setas do teclado* para se movimentar.
-- Pressione *espaço* para pular.
-- Pressione *X* para atirar.
-- Pressione *C* para trocar o tipo de tiro.
-- Pressione *seta para cima + espaco* para escalar paredes.
-- O jogador tem *16 vidas*.
+- ☕ **Java** JDK 8 ou superior
+- 🔁 **Java RMI** 
+- 📦 **Gradle** (ou utilize o Gradle Wrapper incluso no projeto)
+- 🎮 **LibGDX** (já configurado, não é necessário instalar manualmente)
+- 🧠 **IDE recomendada:** IntelliJ IDEA, Visual Studio Code ou qualquer IDE que suporte Java e Gradle
 
-## Platforms
+---
 
-- core: Main module with the application logic shared by all platforms.
-- lwjgl3: Primary desktop platform using LWJGL3; was called 'desktop' in older docs.
+## 🏗️ Como Compilar
 
+### ✔️ Passo 1: Abrir o terminal na raiz do projeto
 
-## Link Do Relatório Técnico
-[Relatório Técnico](https://github.com/Grupo-8-2025/TrabalhoPratico3/blob/SegundaFaseConfigurada/Relat%C3%B3rio%20TP-Megaman%20X%20Multiplayer.pdf)
+### ✔️ Passo 2: Compilar usando o Gradle Wrapper
 
-## Para Rodar
+## 🎯 Como Rodar o Jogo
 
-bash
-gradle run or gradlew run
->>>>>>> Stashed changes
+### ✅ Pelo Terminal
+
+**No Windows (Prompt de Comando ou PowerShell depois de acessar a pasta root do projeto):**
+
+```bash
+gradlew lwjgl3:run
+```
+
+---
+
+### ✅ Pela sua IDE
+
+1. Abra o projeto na sua IDE de preferência (**IntelliJ IDEA**, **VS Code**, **Eclipse**, etc.)
+2. Navegue até o arquivo:
+
+```
+lwjgl3/src/main/java/com/tp2/megamanx/lwjgl3/Lwjgl3Launcher.java
+```
+
+3. Clique com o botão direito no arquivo e selecione:
+   - **"Run"** (IntelliJ IDEA, VS Code) ou **"Executar"** (dependendo do idioma da sua IDE)
+
+---
+
+### ⚠️ Importante
+
+- 🔳 Execute o jogo **apenas em modo janela**, na resolução recomendada de **800x500 pixels**. **Não utilize o modo tela cheia**, pois pode gerar erros de escala.
