@@ -1,4 +1,4 @@
-# 🎮 Remake MegaManX 🎮
+# 🎮 Remake MegaManX Multiplayer 🎮
 
 Bem-vindo ao repositório **Remake MegaManX Multiplayer**! Este projeto foi desenvolvido como trabalho prático da matéria Linguagem e Técnicas de Programação 2 no curso técnico de informática do CEFET-MG.
 O jogo desenvolvido é baseado no primeiro jogo da clássica série de jogos **Mega Man X**. Ele representa uma evolução do remake feito em link repositório, com melhorias no código, adição de segunda fase e modo multiplayer, utilizando **Java RMI**. 
