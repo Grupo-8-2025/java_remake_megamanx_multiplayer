@@ -8,7 +8,7 @@ O jogo desenvolvido é baseado no primeiro jogo da clássica série de jogos **M
 ## 🚀 Tecnologias Utilizadas
 
 - ☕ **Java** JDK 8 ou superior
-- 🔁 **Java RMI** 
+- 🔁 **Java RMI** (importado e utilizado no próprio código)
 - 📦 **Gradle** (ou utilize o Gradle Wrapper incluso no projeto)
 - 🎮 **LibGDX** (já configurado, não é necessário instalar manualmente)
 - 🧠 **IDE recomendada:** IntelliJ IDEA, Visual Studio Code ou qualquer IDE que suporte Java e Gradle
