@@ -39,7 +39,7 @@ gradlew lwjgl3:run
 1. Baixe e extraia o arquivo zip do projeto
 2. Copie a pasta principal do projeto para o diretório desejado
 3. Abra o projeto na sua IDE de preferência
-4. Navegue até o arquivo
+4. Navegue até o arquivo:
 ```
 lwjgl3/src/main/java/com/tp2/megamanx/lwjgl3/Lwjgl3Launcher.java
 ```
