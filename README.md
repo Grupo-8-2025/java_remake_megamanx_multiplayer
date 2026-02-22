@@ -1,65 +1,68 @@
-# 🎮 Remake MegaManX Multiplayer 🎮
+# Remake MegaManX
 
-Bem-vindo ao repositório **Remake MegaManX Multiplayer**! Este projeto foi desenvolvido como trabalho prático da matéria Linguagem e Técnicas de Programação 2 no curso técnico de informática do CEFET-MG.
-O jogo desenvolvido é baseado no primeiro jogo da clássica série de jogos **Mega Man X**. Ele representa uma evolução do remake feito em [Remake MegaManX](https://github.com/Grupo-8-2025/remake_megamanx), com melhorias no código, adição de segunda fase e modo multiplayer, utilizando **Java RMI**. 
-
----
-
-## 🚀 Tecnologias Utilizadas
-
-- ☕ **Java** JDK 8 ou superior
-- 🔁 **Java RMI** (importado e utilizado no próprio código)
-- 📦 **Gradle** (ou utilize o Gradle Wrapper incluso no projeto)
-- 🎮 **LibGDX** (já configurado, não é necessário instalar manualmente)
-- 🧠 **IDE recomendada:** IntelliJ IDEA, Visual Studio Code ou qualquer IDE que suporte Java e Gradle
+Jogo desenvolvido em Java inspirado no primeiro título da clássica franquia Mega Man X, com o objetivo de reproduzir suas principais mecânicas de jogabilidade e expandi-las com um modo multiplayer. Este projeto foi desenvolvido como trabalho prático da disciplina Linguagem e Técnicas de Programação 2 no curso técnico de informática do CEFET-MG, utilizando a biblioteca LibGDX para recursos gráficos e multimídia e Java RMI para comunicação em rede.
 
 ---
 
-## 🏗️ Como Compilar
+## Funcionalidades:
+- Movimentação do personagem em plataformas
+- Sistema de pulo e dash
+- Sistema de tiros e troca de tipos de disparo
+- Inimigos e chefão por fase
+- Sistema de colisão
+- Execução do jogo em modo janela
+- Segunda fase adicionada
+- Modo singleplayer
+- Modo multiplayer
 
-✔️ **Passo 1**: Abrir o terminal na raiz do projeto
+## Tecnologias usadas:
+- Java (JDK 8 ou superior)
+- Java RMI
+- Gradle
+- LibGDX
+- VS Code
 
-✔️ **Passo 2**: Compilar usando o Gradle Wrapper
+---
 
-## 🎯 Como Rodar o Jogo
+## Como executar
 
-### ✅ Pelo Terminal
-
-**No Windows (Prompt de Comando ou PowerShell depois de acessar a pasta root do projeto):**
-
+### Pelo Terminal
+1. Baixe e extraia o arquivo zip do projeto
+2. Copie a pasta principal do projeto para o diretório desejado
+3. Abra o terminal na raiz onde está o projeto
+4. Compile e execute utilizando o comando:
 ```bash
 gradlew lwjgl3:run
 ```
 
-### ✅ Pela sua IDE
-
-1. Abra o projeto na sua IDE de preferência (**IntelliJ IDEA**, **VS Code**, **Eclipse**, etc.)
-2. Navegue até o arquivo:
-
+### Pela sua IDE
+1. Baixe e extraia o arquivo zip do projeto
+2. Copie a pasta principal do projeto para o diretório desejado
+3. Abra o projeto na sua IDE de preferência
+4. Navegue até o arquivo
 ```
 lwjgl3/src/main/java/com/tp2/megamanx/lwjgl3/Lwjgl3Launcher.java
 ```
+5. Clique com o botão direito no arquivo e selecione Run ou Executar
 
-3. Clique com o botão direito no arquivo e selecione:
-   - **"Run"** (IntelliJ IDEA, VS Code) ou **"Executar"** (dependendo do idioma da sua IDE)
-
-### ⚠️ Importante
-
-- Execute o jogo **apenas em modo janela**, na resolução recomendada de **800x500 pixels**. **Não utilize o modo tela cheia**, pois pode gerar erros de escala
+### Observações importantes:
+- Execute o jogo somente em modo janela
+- Utilize a resolução recomendada de 800x500 pixels
+- Não utilize o modo tela cheia, pois pode ocorrer erro de escala gráfica
 
 ---
 
-## 🕹️Como Jogar?🕹️
+## Como Jogar?
 
-### 🎯 Objetivo
+### Objetivo
 Derrotar o chefão de cada fase
 
-### 🔰 Inicío do Jogo
-- **Jogador 1**: clicar no botão **Modo Servidor**
-- **Jogador 2**: clicar no botão **Modo Cliente**
-- **Jogador Único**: clicar no botão **Modo Singleplayer**
+### Início do jogo
+- **Jogador 1**: clicar no botão Modo Servidor
+- **Jogador 2**: clicar no botão Modo Cliente
+- **Jogador único**: clicar no botão Modo Singleplayer
 
-### 🎮 Controles
+### Controles
 - **⬆️ Cima**: Subir plataformas
 - **⬅️ Esquerda**: Mover-se para a esquerda
 - **➡️ Direita**: Mover-se para a direita
@@ -67,3 +70,8 @@ Derrotar o chefão de cada fase
 - **Tecla Shift**: Ativar o dash
 - **Tecla X**: Atirar
 - **Tecla C**: Trocar de tiro
+
+---
+
+## Observação importante
+Este projeto utilizou inteligências artificiais generativas como apoio no desenvolvimento, sendo empregadas para auxiliar na elaboração de código, correção de erros de lógica e documentação.
