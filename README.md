@@ -74,4 +74,4 @@ Derrotar o chefão de cada fase
 ---
 
 ## Observação importante
-Este projeto utilizou inteligências artificiais generativas como apoio no desenvolvimento, sendo empregadas para auxiliar na elaboração de código, correção de erros de lógica e documentação.
+Este projeto utilizou inteligências artificiais generativas como apoio no desenvolvimento, sendo empregadas para auxiliar na elaboração dos códigos, correção de erros de lógica e de bugs, bem como na documentação do projeto.
