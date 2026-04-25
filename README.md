@@ -61,8 +61,8 @@ gradlew lwjgl3:run
 1. Baixe e extraia o arquivo `.zip` do projeto
 2. Abra o projeto em sua IDE de preferência 
 3. Aguarde o carregamento e a sincronização das dependências do Gradle
-3. Navegue até o seguinte arquivo: `lwjgl3/src/main/java/com/tp2/megamanx/lwjgl3/Lwjgl3Launcher.java`
-Execute a classe `Lwjgl3Launcher`
+4. Navegue até o seguinte arquivo: `lwjgl3/src/main/java/com/tp2/megamanx/lwjgl3/Lwjgl3Launcher.java`
+5. Execute a classe `Lwjgl3Launcher`
 
 ---
 
