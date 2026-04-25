@@ -4,6 +4,16 @@ Jogo desenvolvido em Java, inspirado no primeiro título da clássica franquia M
 
 A aplicação foi desenvolvida como trabalho prático da disciplina Linguagem e Técnicas de Programação II, no curso técnico de informática do CEFET-MG. Para o desenvolvimento, foram utilizadas a biblioteca LibGDX, responsável pelos recursos gráficos e multimídia, e Java RMI, empregado na comunicação em rede entre os jogadores.
 
+## Status do Projeto
+
+Este projeto foi desenvolvido para fins acadêmicos e não está mais em manutenção.
+
+Atualmente, podem ocorrer comportamentos inesperados em determinadas situações, como inconsistências na sincronização de estados e elementos do jogo em modo multiplayer.
+
+O projeto é mantido aqui como demonstração de conceito e aprendizado.
+
+---
+
 ## Objetivos
 - Praticar desenvolvimento backend em Java
 - Aplicar conceitos de Programação Orientada a Objetos no desenvolvimento de jogos
@@ -31,6 +41,8 @@ A aplicação foi desenvolvida como trabalho prático da disciplina Linguagem e 
 - Padrão de projeto Iterator
 - VS Code
 
+---
+
 ## Como Executar
 
 ### Requisitos
@@ -51,6 +63,8 @@ gradlew lwjgl3:run
 3. Aguarde o carregamento e a sincronização das dependências do Gradle
 3. Navegue até o seguinte arquivo: `lwjgl3/src/main/java/com/tp2/megamanx/lwjgl3/Lwjgl3Launcher.java`
 Execute a classe `Lwjgl3Launcher`
+
+---
 
 ## Como Jogar
 
@@ -74,6 +88,13 @@ Derrotar o chefão de cada fase.
 ### Dica
 Execute o jogo em modo janela, na resolução inicial, para evitar problemas de escala gráfica.
 
+---
+
+## Observação Importante
+Este projeto contou com o apoio de inteligências artificiais generativas durante o desenvolvimento, sendo utilizadas para auxiliar na implementação de código, correção de erros de lógica e aprimoramento da documentação.
+
+---
+
 ## Telas do Jogo
 Capturas de tela mostrando a interface e a jogabilidade do projeto.
 
@@ -95,9 +116,4 @@ Capturas de tela mostrando a interface e a jogabilidade do projeto.
 ### Telas Finais
 <img width="500" height="331" alt="image" src="https://github.com/user-attachments/assets/0ca6f220-2ca9-409b-83f3-2a1f7e949ecc" />
 <br>
-<img width="500" height="331" alt="image" src="https://github.com/user-attachments/assets/dea4abb3-e47b-48e5-982a-8f136dd77429" />
-
----
-
-## Observação Importante
-Este projeto contou com o apoio de inteligências artificiais generativas durante o desenvolvimento, sendo utilizadas para auxiliar na implementação de código, correção de erros de lógica e aprimoramento da documentação.
+<img width="500" height="331" alt="Capturar" src="https://github.com/user-attachments/assets/da368392-599e-494d-814d-4c552d6add44" />
