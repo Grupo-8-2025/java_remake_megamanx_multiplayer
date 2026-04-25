@@ -40,6 +40,8 @@ O projeto é mantido aqui como demonstração de conceito e aprendizado.
 - LibGDX
 - Padrão de projeto Iterator
 - VS Code
+- GitHub Copilot
+- Live Share
 
 ---
 
