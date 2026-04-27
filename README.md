@@ -26,12 +26,15 @@ O projeto é mantido aqui como demonstração de conceito e aprendizado.
 ## Funcionalidades
 - Movimentação do personagem em plataformas
 - Sistema de pulo e dash
-- Sistema de tiros e troca de tipos de disparo
-- Inimigos e chefão por fase
-- Sistema de colisão
-- Segunda fase adicionada
+- Sistema de disparos com troca de tipos de tiro
+- Sistema de controle de vidas
+- Progressão entre fases
+- Presença de inimigos e chefão por fase
+- Sistema de detecção de colisões
+- Sistema de condições de vitória e game over
 - Modo singleplayer
-- Modo multiplayer
+- Modo multiplayer cooperativo
+- Sincronização de estados do jogo no modo multiplayer
 
 ## Tecnologias Usadas
 - Java
